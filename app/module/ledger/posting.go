@@ -8,50 +8,22 @@ import (
 	"github.com/ericmarcelinotju/mal-assessment/apperror"
 )
 
-// Post applies one instruction to the ledger.
-func (s *service) Post(ctx context.Context, ev entity.Event) ([]entity.LedgerEntry, error) {
-	acc, err := s.account(ev.AccountID)
-	if err != nil {
-		return nil, s.reject(ctx, ev, apperror.ErrUnknownAccount, "unknown account "+ev.AccountID)
-	}
-	if ev.HasStatedAmount() && ev.Amount.Currency() != acc.Currency {
-		return nil, s.reject(ctx, ev, apperror.ErrCurrencyMismatch,
-			"event is "+ev.Amount.Currency().String()+" but account "+acc.ID+" is "+acc.Currency.String())
-	}
-
-	switch ev.Type {
-	case entity.EventCredit:
-		return s.postAmount(ctx, acc, ev, ev.Amount, entity.OriginInstruction)
-	case entity.EventDebit:
-		return s.postAmount(ctx, acc, ev, ev.Amount.Neg(), entity.OriginInstruction)
-	case entity.EventAuthorization:
-		return nil, s.authorize(ctx, acc, ev)
-	case entity.EventSettlement:
-		return s.settle(ctx, acc, ev)
-	case entity.EventReversal:
-		return s.reverse(ctx, acc, ev)
-	default:
-		return nil, s.reject(ctx, ev, apperror.ErrInvalidParameter,
-			"unsupported event type "+string(ev.Type))
-	}
-}
-
-// postAmount books a signed amount, splitting it into instalments when asked.
+// Post appends a signed amount, splitting it into instalments when the event
+// asks for them.
 //
-// Note what is absent: a credit or a debit is not subjected to the
-// available-balance test. The brief applies that test to authorizations only,
-// and rightly so -- a debit that cannot be funded is exactly the situation the
-// overdraft fee exists to price. Refusing it would mean the fee rule could
-// never fire at all.
-func (s *service) postAmount(
+// Note what is absent: no available-balance test. The brief applies that test
+// to authorizations only, and rightly so -- a debit that cannot be funded is
+// exactly the situation the overdraft fee exists to price. Refusing it here
+// would mean the fee rule could never fire at all.
+func (s *service) Post(
 	ctx context.Context, acc entity.Account, ev entity.Event,
 	signed entity.Money, origin entity.EntryOrigin,
 ) ([]entity.LedgerEntry, error) {
 	parts := []entity.Money{signed}
 	if ev.Instalments > 1 {
-		split, err := SplitInstalments(signed, ev.Instalments)
+		split, err := entity.SplitInstalments(signed, ev.Instalments)
 		if err != nil {
-			return nil, s.reject(ctx, ev, apperror.ErrInvalidParameter, err.Error())
+			return nil, s.Reject(ctx, ev, apperror.ErrInvalidParameter, err.Error())
 		}
 		parts = split
 	}
@@ -62,7 +34,7 @@ func (s *service) postAmount(
 		if len(parts) > 1 {
 			memo = memo + " instalment " + strconv.Itoa(i+1) + "/" + strconv.Itoa(len(parts))
 		}
-		entry, err := s.appendEntry(ctx, entity.LedgerEntry{
+		entry, err := s.Append(ctx, entity.LedgerEntry{
 			EventID:    ev.ID,
 			AccountID:  acc.ID,
 			PostingDay: ev.PostingDay,
@@ -70,6 +42,59 @@ func (s *service) postAmount(
 			Amount:     p,
 			Origin:     origin,
 			Memo:       memo,
+		})
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, entry)
+	}
+	return out, nil
+}
+
+// Reverse books a contra entry against every entry of an earlier event.
+//
+// The reversed entry is not touched. The journal is append-only, so undoing E7
+// means appending +620.00 at E7's own value date and leaving both records
+// standing. The value date matters: reversing at the original value date
+// restores the balance of every affected day, whereas reversing at today's date
+// would leave the historical days permanently wrong while making today's total
+// look right.
+func (s *service) Reverse(
+	ctx context.Context, acc entity.Account, ev entity.Event,
+) ([]entity.LedgerEntry, error) {
+	all, err := s.Entries(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var targets []entity.LedgerEntry
+	for _, e := range all {
+		if e.EventID == ev.ReversesEventID && e.AccountID == acc.ID {
+			targets = append(targets, e)
+		}
+	}
+	if len(targets) == 0 {
+		return nil, s.Reject(ctx, ev, apperror.ErrUnknownEventRef,
+			"reversal references "+string(ev.ReversesEventID)+", which has no entries on "+acc.ID)
+	}
+	for _, e := range all {
+		if e.Origin == entity.OriginReversal && e.ReversesSeq == targets[0].Seq {
+			return nil, s.Reject(ctx, ev, apperror.ErrAlreadyReversed,
+				string(ev.ReversesEventID)+" is already reversed")
+		}
+	}
+
+	out := make([]entity.LedgerEntry, 0, len(targets))
+	for _, t := range targets {
+		entry, err := s.Append(ctx, entity.LedgerEntry{
+			EventID:     ev.ID,
+			AccountID:   acc.ID,
+			PostingDay:  ev.PostingDay,
+			ValueDate:   t.ValueDate,
+			Amount:      t.Amount.Neg(),
+			Origin:      entity.OriginReversal,
+			Memo:        "reversal of " + string(t.EventID),
+			ReversesSeq: t.Seq,
 		})
 		if err != nil {
 			return nil, err

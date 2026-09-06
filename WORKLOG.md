@@ -185,3 +185,34 @@ in `git log`, which is the check on them.
 
   Every figure is unchanged through the refactor — three fees, 390.93, 466.03,
   10.008, and the same single expected failure.
+
+- **23:28** Split the work into one folder per module, which is what the
+  boilerplate convention actually means and what I had been getting wrong. The
+  single `ledger` package became six:
+
+      account/        accounts, currency, opening balance
+      ledger/         the append-only journal and value-dated balances
+      authorization/  holds, availability test, settlement
+      fee/            overdraft assessment and the reversal sweep
+      interest/       accrual, restatement, capitalisation
+      replay/         orchestration and the report
+
+  Each has its own `service.go`, `repository.go`, `mock/` and `test/`. Also
+  deleted `controller.go` and `route.go`: those are the REST delivery layer, the
+  brief forbids a web layer, and inventing an `io.Writer` "controller" to
+  imitate the shape was me following the letter of a convention past the point
+  where it meant anything.
+
+  The split forced better boundaries than the flat package had. `fee` now owns a
+  repository of which account-days have been charged, so the "once per day per
+  account" cap is a stored fact rather than a map hidden in the service.
+  `SplitInstalments` moved to `app/entity` because it is pure money arithmetic
+  and no module needs to own it. And the dependency graph is now a DAG that can
+  be stated in one line — account and ledger depend on nothing, authorization,
+  fee and interest depend on ledger, replay depends on all of them — so the
+  journal cannot be made to care why an entry exists.
+
+  Behavioural tests moved to `replay/test` since they need the whole stack;
+  money and instalment tests to `app/entity/test`; the mock-driven service tests
+  to their own module. Every figure is unchanged: three fees, 390.93, 466.03,
+  10.008, one expected failure.

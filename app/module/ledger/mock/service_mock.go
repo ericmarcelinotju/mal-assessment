@@ -8,7 +8,7 @@ import (
 	"context"
 
 	"github.com/ericmarcelinotju/mal-assessment/app/entity"
-	"github.com/ericmarcelinotju/mal-assessment/config"
+	"github.com/ericmarcelinotju/mal-assessment/apperror"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -39,106 +39,53 @@ func (_m *MockService) EXPECT() *MockService_Expecter {
 	return &MockService_Expecter{mock: &_m.Mock}
 }
 
-// Accruals provides a mock function for the type MockService
-func (_mock *MockService) Accruals(context1 context.Context) ([]entity.Accrual, error) {
-	ret := _mock.Called(context1)
+// Append provides a mock function for the type MockService
+func (_mock *MockService) Append(context1 context.Context, ledgerEntry entity.LedgerEntry) (entity.LedgerEntry, error) {
+	ret := _mock.Called(context1, ledgerEntry)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Accruals")
+		panic("no return value specified for Append")
 	}
 
-	var r0 []entity.Accrual
+	var r0 entity.LedgerEntry
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]entity.Accrual, error)); ok {
-		return returnFunc(context1)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.LedgerEntry) (entity.LedgerEntry, error)); ok {
+		return returnFunc(context1, ledgerEntry)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []entity.Accrual); ok {
-		r0 = returnFunc(context1)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.LedgerEntry) entity.LedgerEntry); ok {
+		r0 = returnFunc(context1, ledgerEntry)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]entity.Accrual)
-		}
+		r0 = ret.Get(0).(entity.LedgerEntry)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(context1)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.LedgerEntry) error); ok {
+		r1 = returnFunc(context1, ledgerEntry)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// MockService_Accruals_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Accruals'
-type MockService_Accruals_Call struct {
+// MockService_Append_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Append'
+type MockService_Append_Call struct {
 	*mock.Call
 }
 
-// Accruals is a helper method to define mock.On call
+// Append is a helper method to define mock.On call
 //   - context1 context.Context
-func (_e *MockService_Expecter) Accruals(context1 interface{}) *MockService_Accruals_Call {
-	return &MockService_Accruals_Call{Call: _e.mock.On("Accruals", context1)}
+//   - ledgerEntry entity.LedgerEntry
+func (_e *MockService_Expecter) Append(context1 interface{}, ledgerEntry interface{}) *MockService_Append_Call {
+	return &MockService_Append_Call{Call: _e.mock.On("Append", context1, ledgerEntry)}
 }
 
-func (_c *MockService_Accruals_Call) Run(run func(context1 context.Context)) *MockService_Accruals_Call {
+func (_c *MockService_Append_Call) Run(run func(context1 context.Context, ledgerEntry entity.LedgerEntry)) *MockService_Append_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockService_Accruals_Call) Return(accruals []entity.Accrual, err error) *MockService_Accruals_Call {
-	_c.Call.Return(accruals, err)
-	return _c
-}
-
-func (_c *MockService_Accruals_Call) RunAndReturn(run func(context1 context.Context) ([]entity.Accrual, error)) *MockService_Accruals_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// CloseDay provides a mock function for the type MockService
-func (_mock *MockService) CloseDay(context1 context.Context, day entity.Day) error {
-	ret := _mock.Called(context1, day)
-
-	if len(ret) == 0 {
-		panic("no return value specified for CloseDay")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Day) error); ok {
-		r0 = returnFunc(context1, day)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// MockService_CloseDay_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CloseDay'
-type MockService_CloseDay_Call struct {
-	*mock.Call
-}
-
-// CloseDay is a helper method to define mock.On call
-//   - context1 context.Context
-//   - day entity.Day
-func (_e *MockService_Expecter) CloseDay(context1 interface{}, day interface{}) *MockService_CloseDay_Call {
-	return &MockService_CloseDay_Call{Call: _e.mock.On("CloseDay", context1, day)}
-}
-
-func (_c *MockService_CloseDay_Call) Run(run func(context1 context.Context, day entity.Day)) *MockService_CloseDay_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 entity.Day
+		var arg1 entity.LedgerEntry
 		if args[1] != nil {
-			arg1 = args[1].(entity.Day)
+			arg1 = args[1].(entity.LedgerEntry)
 		}
 		run(
 			arg0,
@@ -148,56 +95,162 @@ func (_c *MockService_CloseDay_Call) Run(run func(context1 context.Context, day 
 	return _c
 }
 
-func (_c *MockService_CloseDay_Call) Return(err error) *MockService_CloseDay_Call {
-	_c.Call.Return(err)
+func (_c *MockService_Append_Call) Return(ledgerEntry1 entity.LedgerEntry, err error) *MockService_Append_Call {
+	_c.Call.Return(ledgerEntry1, err)
 	return _c
 }
 
-func (_c *MockService_CloseDay_Call) RunAndReturn(run func(context1 context.Context, day entity.Day) error) *MockService_CloseDay_Call {
+func (_c *MockService_Append_Call) RunAndReturn(run func(context1 context.Context, ledgerEntry entity.LedgerEntry) (entity.LedgerEntry, error)) *MockService_Append_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// Config provides a mock function for the type MockService
-func (_mock *MockService) Config() config.Config {
-	ret := _mock.Called()
+// ClosingBalance provides a mock function for the type MockService
+func (_mock *MockService) ClosingBalance(context1 context.Context, account entity.Account, day entity.Day) (entity.Money, error) {
+	ret := _mock.Called(context1, account, day)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Config")
+		panic("no return value specified for ClosingBalance")
 	}
 
-	var r0 config.Config
-	if returnFunc, ok := ret.Get(0).(func() config.Config); ok {
-		r0 = returnFunc()
-	} else {
-		r0 = ret.Get(0).(config.Config)
+	var r0 entity.Money
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Account, entity.Day) (entity.Money, error)); ok {
+		return returnFunc(context1, account, day)
 	}
-	return r0
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Account, entity.Day) entity.Money); ok {
+		r0 = returnFunc(context1, account, day)
+	} else {
+		r0 = ret.Get(0).(entity.Money)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.Account, entity.Day) error); ok {
+		r1 = returnFunc(context1, account, day)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
 }
 
-// MockService_Config_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Config'
-type MockService_Config_Call struct {
+// MockService_ClosingBalance_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ClosingBalance'
+type MockService_ClosingBalance_Call struct {
 	*mock.Call
 }
 
-// Config is a helper method to define mock.On call
-func (_e *MockService_Expecter) Config() *MockService_Config_Call {
-	return &MockService_Config_Call{Call: _e.mock.On("Config")}
+// ClosingBalance is a helper method to define mock.On call
+//   - context1 context.Context
+//   - account entity.Account
+//   - day entity.Day
+func (_e *MockService_Expecter) ClosingBalance(context1 interface{}, account interface{}, day interface{}) *MockService_ClosingBalance_Call {
+	return &MockService_ClosingBalance_Call{Call: _e.mock.On("ClosingBalance", context1, account, day)}
 }
 
-func (_c *MockService_Config_Call) Run(run func()) *MockService_Config_Call {
+func (_c *MockService_ClosingBalance_Call) Run(run func(context1 context.Context, account entity.Account, day entity.Day)) *MockService_ClosingBalance_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 entity.Account
+		if args[1] != nil {
+			arg1 = args[1].(entity.Account)
+		}
+		var arg2 entity.Day
+		if args[2] != nil {
+			arg2 = args[2].(entity.Day)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
 	})
 	return _c
 }
 
-func (_c *MockService_Config_Call) Return(config1 config.Config) *MockService_Config_Call {
-	_c.Call.Return(config1)
+func (_c *MockService_ClosingBalance_Call) Return(money entity.Money, err error) *MockService_ClosingBalance_Call {
+	_c.Call.Return(money, err)
 	return _c
 }
 
-func (_c *MockService_Config_Call) RunAndReturn(run func() config.Config) *MockService_Config_Call {
+func (_c *MockService_ClosingBalance_Call) RunAndReturn(run func(context1 context.Context, account entity.Account, day entity.Day) (entity.Money, error)) *MockService_ClosingBalance_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ClosingBalanceExcluding provides a mock function for the type MockService
+func (_mock *MockService) ClosingBalanceExcluding(context1 context.Context, account entity.Account, day entity.Day, n int) (entity.Money, error) {
+	ret := _mock.Called(context1, account, day, n)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ClosingBalanceExcluding")
+	}
+
+	var r0 entity.Money
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Account, entity.Day, int) (entity.Money, error)); ok {
+		return returnFunc(context1, account, day, n)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Account, entity.Day, int) entity.Money); ok {
+		r0 = returnFunc(context1, account, day, n)
+	} else {
+		r0 = ret.Get(0).(entity.Money)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.Account, entity.Day, int) error); ok {
+		r1 = returnFunc(context1, account, day, n)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockService_ClosingBalanceExcluding_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ClosingBalanceExcluding'
+type MockService_ClosingBalanceExcluding_Call struct {
+	*mock.Call
+}
+
+// ClosingBalanceExcluding is a helper method to define mock.On call
+//   - context1 context.Context
+//   - account entity.Account
+//   - day entity.Day
+//   - n int
+func (_e *MockService_Expecter) ClosingBalanceExcluding(context1 interface{}, account interface{}, day interface{}, n interface{}) *MockService_ClosingBalanceExcluding_Call {
+	return &MockService_ClosingBalanceExcluding_Call{Call: _e.mock.On("ClosingBalanceExcluding", context1, account, day, n)}
+}
+
+func (_c *MockService_ClosingBalanceExcluding_Call) Run(run func(context1 context.Context, account entity.Account, day entity.Day, n int)) *MockService_ClosingBalanceExcluding_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 entity.Account
+		if args[1] != nil {
+			arg1 = args[1].(entity.Account)
+		}
+		var arg2 entity.Day
+		if args[2] != nil {
+			arg2 = args[2].(entity.Day)
+		}
+		var arg3 int
+		if args[3] != nil {
+			arg3 = args[3].(int)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockService_ClosingBalanceExcluding_Call) Return(money entity.Money, err error) *MockService_ClosingBalanceExcluding_Call {
+	_c.Call.Return(money, err)
+	return _c
+}
+
+func (_c *MockService_ClosingBalanceExcluding_Call) RunAndReturn(run func(context1 context.Context, account entity.Account, day entity.Day, n int) (entity.Money, error)) *MockService_ClosingBalanceExcluding_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -327,8 +380,8 @@ func (_c *MockService_Errors_Call) RunAndReturn(run func(context1 context.Contex
 }
 
 // Post provides a mock function for the type MockService
-func (_mock *MockService) Post(context1 context.Context, event entity.Event) ([]entity.LedgerEntry, error) {
-	ret := _mock.Called(context1, event)
+func (_mock *MockService) Post(context1 context.Context, account entity.Account, event entity.Event, money entity.Money, entryOrigin entity.EntryOrigin) ([]entity.LedgerEntry, error) {
+	ret := _mock.Called(context1, account, event, money, entryOrigin)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Post")
@@ -336,18 +389,18 @@ func (_mock *MockService) Post(context1 context.Context, event entity.Event) ([]
 
 	var r0 []entity.LedgerEntry
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Event) ([]entity.LedgerEntry, error)); ok {
-		return returnFunc(context1, event)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Account, entity.Event, entity.Money, entity.EntryOrigin) ([]entity.LedgerEntry, error)); ok {
+		return returnFunc(context1, account, event, money, entryOrigin)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Event) []entity.LedgerEntry); ok {
-		r0 = returnFunc(context1, event)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Account, entity.Event, entity.Money, entity.EntryOrigin) []entity.LedgerEntry); ok {
+		r0 = returnFunc(context1, account, event, money, entryOrigin)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]entity.LedgerEntry)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.Event) error); ok {
-		r1 = returnFunc(context1, event)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.Account, entity.Event, entity.Money, entity.EntryOrigin) error); ok {
+		r1 = returnFunc(context1, account, event, money, entryOrigin)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -361,24 +414,42 @@ type MockService_Post_Call struct {
 
 // Post is a helper method to define mock.On call
 //   - context1 context.Context
+//   - account entity.Account
 //   - event entity.Event
-func (_e *MockService_Expecter) Post(context1 interface{}, event interface{}) *MockService_Post_Call {
-	return &MockService_Post_Call{Call: _e.mock.On("Post", context1, event)}
+//   - money entity.Money
+//   - entryOrigin entity.EntryOrigin
+func (_e *MockService_Expecter) Post(context1 interface{}, account interface{}, event interface{}, money interface{}, entryOrigin interface{}) *MockService_Post_Call {
+	return &MockService_Post_Call{Call: _e.mock.On("Post", context1, account, event, money, entryOrigin)}
 }
 
-func (_c *MockService_Post_Call) Run(run func(context1 context.Context, event entity.Event)) *MockService_Post_Call {
+func (_c *MockService_Post_Call) Run(run func(context1 context.Context, account entity.Account, event entity.Event, money entity.Money, entryOrigin entity.EntryOrigin)) *MockService_Post_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 entity.Event
+		var arg1 entity.Account
 		if args[1] != nil {
-			arg1 = args[1].(entity.Event)
+			arg1 = args[1].(entity.Account)
+		}
+		var arg2 entity.Event
+		if args[2] != nil {
+			arg2 = args[2].(entity.Event)
+		}
+		var arg3 entity.Money
+		if args[3] != nil {
+			arg3 = args[3].(entity.Money)
+		}
+		var arg4 entity.EntryOrigin
+		if args[4] != nil {
+			arg4 = args[4].(entity.EntryOrigin)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
+			arg3,
+			arg4,
 		)
 	})
 	return _c
@@ -389,126 +460,150 @@ func (_c *MockService_Post_Call) Return(ledgerEntrys []entity.LedgerEntry, err e
 	return _c
 }
 
-func (_c *MockService_Post_Call) RunAndReturn(run func(context1 context.Context, event entity.Event) ([]entity.LedgerEntry, error)) *MockService_Post_Call {
+func (_c *MockService_Post_Call) RunAndReturn(run func(context1 context.Context, account entity.Account, event entity.Event, money entity.Money, entryOrigin entity.EntryOrigin) ([]entity.LedgerEntry, error)) *MockService_Post_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// Replay provides a mock function for the type MockService
-func (_mock *MockService) Replay(context1 context.Context, events []entity.Event) error {
-	ret := _mock.Called(context1, events)
+// Reject provides a mock function for the type MockService
+func (_mock *MockService) Reject(context1 context.Context, event entity.Event, errorCode apperror.ErrorCode, s string) error {
+	ret := _mock.Called(context1, event, errorCode, s)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Replay")
+		panic("no return value specified for Reject")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, []entity.Event) error); ok {
-		r0 = returnFunc(context1, events)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Event, apperror.ErrorCode, string) error); ok {
+		r0 = returnFunc(context1, event, errorCode, s)
 	} else {
 		r0 = ret.Error(0)
 	}
 	return r0
 }
 
-// MockService_Replay_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Replay'
-type MockService_Replay_Call struct {
+// MockService_Reject_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Reject'
+type MockService_Reject_Call struct {
 	*mock.Call
 }
 
-// Replay is a helper method to define mock.On call
+// Reject is a helper method to define mock.On call
 //   - context1 context.Context
-//   - events []entity.Event
-func (_e *MockService_Expecter) Replay(context1 interface{}, events interface{}) *MockService_Replay_Call {
-	return &MockService_Replay_Call{Call: _e.mock.On("Replay", context1, events)}
+//   - event entity.Event
+//   - errorCode apperror.ErrorCode
+//   - s string
+func (_e *MockService_Expecter) Reject(context1 interface{}, event interface{}, errorCode interface{}, s interface{}) *MockService_Reject_Call {
+	return &MockService_Reject_Call{Call: _e.mock.On("Reject", context1, event, errorCode, s)}
 }
 
-func (_c *MockService_Replay_Call) Run(run func(context1 context.Context, events []entity.Event)) *MockService_Replay_Call {
+func (_c *MockService_Reject_Call) Run(run func(context1 context.Context, event entity.Event, errorCode apperror.ErrorCode, s string)) *MockService_Reject_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 []entity.Event
+		var arg1 entity.Event
 		if args[1] != nil {
-			arg1 = args[1].([]entity.Event)
+			arg1 = args[1].(entity.Event)
+		}
+		var arg2 apperror.ErrorCode
+		if args[2] != nil {
+			arg2 = args[2].(apperror.ErrorCode)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
+			arg3,
 		)
 	})
 	return _c
 }
 
-func (_c *MockService_Replay_Call) Return(err error) *MockService_Replay_Call {
+func (_c *MockService_Reject_Call) Return(err error) *MockService_Reject_Call {
 	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *MockService_Replay_Call) RunAndReturn(run func(context1 context.Context, events []entity.Event) error) *MockService_Replay_Call {
+func (_c *MockService_Reject_Call) RunAndReturn(run func(context1 context.Context, event entity.Event, errorCode apperror.ErrorCode, s string) error) *MockService_Reject_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// Report provides a mock function for the type MockService
-func (_mock *MockService) Report(context1 context.Context) ([]entity.DayReport, error) {
-	ret := _mock.Called(context1)
+// Reverse provides a mock function for the type MockService
+func (_mock *MockService) Reverse(context1 context.Context, account entity.Account, event entity.Event) ([]entity.LedgerEntry, error) {
+	ret := _mock.Called(context1, account, event)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Report")
+		panic("no return value specified for Reverse")
 	}
 
-	var r0 []entity.DayReport
+	var r0 []entity.LedgerEntry
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]entity.DayReport, error)); ok {
-		return returnFunc(context1)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Account, entity.Event) ([]entity.LedgerEntry, error)); ok {
+		return returnFunc(context1, account, event)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []entity.DayReport); ok {
-		r0 = returnFunc(context1)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Account, entity.Event) []entity.LedgerEntry); ok {
+		r0 = returnFunc(context1, account, event)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]entity.DayReport)
+			r0 = ret.Get(0).([]entity.LedgerEntry)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(context1)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.Account, entity.Event) error); ok {
+		r1 = returnFunc(context1, account, event)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// MockService_Report_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Report'
-type MockService_Report_Call struct {
+// MockService_Reverse_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Reverse'
+type MockService_Reverse_Call struct {
 	*mock.Call
 }
 
-// Report is a helper method to define mock.On call
+// Reverse is a helper method to define mock.On call
 //   - context1 context.Context
-func (_e *MockService_Expecter) Report(context1 interface{}) *MockService_Report_Call {
-	return &MockService_Report_Call{Call: _e.mock.On("Report", context1)}
+//   - account entity.Account
+//   - event entity.Event
+func (_e *MockService_Expecter) Reverse(context1 interface{}, account interface{}, event interface{}) *MockService_Reverse_Call {
+	return &MockService_Reverse_Call{Call: _e.mock.On("Reverse", context1, account, event)}
 }
 
-func (_c *MockService_Report_Call) Run(run func(context1 context.Context)) *MockService_Report_Call {
+func (_c *MockService_Reverse_Call) Run(run func(context1 context.Context, account entity.Account, event entity.Event)) *MockService_Reverse_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
+		var arg1 entity.Account
+		if args[1] != nil {
+			arg1 = args[1].(entity.Account)
+		}
+		var arg2 entity.Event
+		if args[2] != nil {
+			arg2 = args[2].(entity.Event)
+		}
 		run(
 			arg0,
+			arg1,
+			arg2,
 		)
 	})
 	return _c
 }
 
-func (_c *MockService_Report_Call) Return(dayReports []entity.DayReport, err error) *MockService_Report_Call {
-	_c.Call.Return(dayReports, err)
+func (_c *MockService_Reverse_Call) Return(ledgerEntrys []entity.LedgerEntry, err error) *MockService_Reverse_Call {
+	_c.Call.Return(ledgerEntrys, err)
 	return _c
 }
 
-func (_c *MockService_Report_Call) RunAndReturn(run func(context1 context.Context) ([]entity.DayReport, error)) *MockService_Report_Call {
+func (_c *MockService_Reverse_Call) RunAndReturn(run func(context1 context.Context, account entity.Account, event entity.Event) ([]entity.LedgerEntry, error)) *MockService_Reverse_Call {
 	_c.Call.Return(run)
 	return _c
 }

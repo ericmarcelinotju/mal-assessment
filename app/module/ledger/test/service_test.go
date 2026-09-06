@@ -11,20 +11,25 @@ import (
 	"github.com/ericmarcelinotju/mal-assessment/app/entity"
 	"github.com/ericmarcelinotju/mal-assessment/app/module/ledger"
 	ledger_mock "github.com/ericmarcelinotju/mal-assessment/app/module/ledger/mock"
-	"github.com/ericmarcelinotju/mal-assessment/config"
 )
 
 // These are the tests the repository seam exists for.
 //
-// Every other file in this package drives the service through a real in-memory
-// repository, because the arithmetic is the point there. Here the repository is
-// mocked, so the service's own error handling can be exercised -- the paths a
-// working store never takes and which would otherwise be dead code that nobody
-// has ever run.
+// The behavioural tests in app/module/replay/test run every module against real
+// in-memory repositories, because the arithmetic is the point there. Here the
+// repository is mocked, so the service's own error handling can be exercised --
+// the paths a working store never takes, which would otherwise be dead code
+// that nobody has ever run.
 
-func mockedService(t *testing.T, repo *ledger_mock.MockRepository) ledger.Service {
-	t.Helper()
-	return ledger.NewService(config.Default(), repo, ledger.CanonicalAccounts()...)
+func account() entity.Account {
+	return entity.NewAccount("ACC-001", entity.AED, "0.00")
+}
+
+func creditEvent() entity.Event {
+	return entity.Event{
+		ID: "E1", Type: entity.EventCredit, PostingDay: 1, ValueDate: 1,
+		AccountID: "ACC-001", Amount: entity.MustParseMoney("100.00", entity.AED),
+	}
 }
 
 func TestLedgerService_Post(t *testing.T) {
@@ -32,17 +37,15 @@ func TestLedgerService_Post(t *testing.T) {
 		ctx := context.Background()
 
 		repo := ledger_mock.NewMockRepository(t)
-		svc := mockedService(t, repo)
+		svc := ledger.NewService(repo)
 
-		expected := entity.LedgerEntry{Seq: 1, EventID: "E1", AccountID: ledger.ACC001}
+		expected := entity.LedgerEntry{Seq: 1, EventID: "E1", AccountID: "ACC-001"}
 		repo.EXPECT().
 			AppendEntry(mock.Anything, mock.Anything).
 			Return(expected, nil)
 
-		res, err := svc.Post(ctx, entity.Event{
-			ID: "E1", Type: entity.EventCredit, PostingDay: 1, ValueDate: 1,
-			AccountID: ledger.ACC001, Amount: aed("100.00"),
-		})
+		res, err := svc.Post(ctx, account(), creditEvent(),
+			entity.MustParseMoney("100.00", entity.AED), entity.OriginInstruction)
 
 		assert.NoError(t, err)
 		assert.Len(t, res, 1)
@@ -53,16 +56,14 @@ func TestLedgerService_Post(t *testing.T) {
 		ctx := context.Background()
 
 		repo := ledger_mock.NewMockRepository(t)
-		svc := mockedService(t, repo)
+		svc := ledger.NewService(repo)
 
 		repo.EXPECT().
 			AppendEntry(mock.Anything, mock.Anything).
 			Return(entity.LedgerEntry{}, gofakeit.ErrorDatabase())
 
-		res, err := svc.Post(ctx, entity.Event{
-			ID: "E1", Type: entity.EventCredit, PostingDay: 1, ValueDate: 1,
-			AccountID: ledger.ACC001, Amount: aed("100.00"),
-		})
+		res, err := svc.Post(ctx, account(), creditEvent(),
+			entity.MustParseMoney("100.00", entity.AED), entity.OriginInstruction)
 
 		assert.Error(t, err)
 		assert.Nil(t, res)
@@ -70,25 +71,26 @@ func TestLedgerService_Post(t *testing.T) {
 			"the service names the operation that failed rather than passing the raw cause up")
 	})
 
-	t.Run("when the account is unknown then nothing is appended", func(t *testing.T) {
+	t.Run("when an instalment credit is posted then one entry per part is appended", func(t *testing.T) {
 		ctx := context.Background()
 
 		repo := ledger_mock.NewMockRepository(t)
-		svc := mockedService(t, repo)
+		svc := ledger.NewService(repo)
 
-		// Only the rejection is recorded. AppendEntry is never expected, and
-		// mockery fails the test at cleanup if it is called anyway.
+		ev := creditEvent()
+		ev.Amount = entity.MustParseMoney("10.000", entity.BHD)
+		ev.Instalments = 3
+
 		repo.EXPECT().
-			AppendError(mock.Anything, mock.Anything).
-			Return(nil)
+			AppendEntry(mock.Anything, mock.Anything).
+			Return(entity.LedgerEntry{}, nil).
+			Times(3)
 
-		res, err := svc.Post(ctx, entity.Event{
-			ID: "X", Type: entity.EventCredit, PostingDay: 1, ValueDate: 1,
-			AccountID: "NOPE", Amount: aed("100.00"),
-		})
+		res, err := svc.Post(ctx, entity.NewAccount("B", entity.BHD, "0.000"), ev,
+			entity.MustParseMoney("10.000", entity.BHD), entity.OriginInstruction)
 
-		assert.Error(t, err)
-		assert.Nil(t, res)
+		assert.NoError(t, err)
+		assert.Len(t, res, 3)
 	})
 }
 
@@ -97,7 +99,7 @@ func TestLedgerService_Reads(t *testing.T) {
 		ctx := context.Background()
 
 		repo := ledger_mock.NewMockRepository(t)
-		svc := mockedService(t, repo)
+		svc := ledger.NewService(repo)
 
 		repo.EXPECT().
 			Entries(mock.Anything).
@@ -110,41 +112,39 @@ func TestLedgerService_Reads(t *testing.T) {
 		assert.Contains(t, err.Error(), "read ledger entries error")
 	})
 
-	t.Run("when reading accruals fails then the error is wrapped", func(t *testing.T) {
+	t.Run("when the balance cannot read the journal then it does not report zero", func(t *testing.T) {
+		// Returning a zero balance on a failed read would be the dangerous
+		// failure mode: the fee sweep would see a non-negative balance and
+		// silently decline to charge.
 		ctx := context.Background()
 
 		repo := ledger_mock.NewMockRepository(t)
-		svc := mockedService(t, repo)
-
-		repo.EXPECT().
-			Accruals(mock.Anything).
-			Return(nil, gofakeit.ErrorDatabase())
-
-		res, err := svc.Accruals(ctx)
-
-		assert.Error(t, err)
-		assert.Nil(t, res)
-		assert.Contains(t, err.Error(), "read accruals error")
-	})
-}
-
-func TestLedgerService_CloseDay(t *testing.T) {
-	t.Run("when the day close cannot read the log then it stops", func(t *testing.T) {
-		// A failing read during the overdraft sweep must abort the close rather
-		// than carry on against a balance it could not compute. Getting this
-		// wrong would assess fees off a zero balance.
-		ctx := context.Background()
-
-		repo := ledger_mock.NewMockRepository(t)
-		svc := mockedService(t, repo)
+		svc := ledger.NewService(repo)
 
 		repo.EXPECT().
 			Entries(mock.Anything).
 			Return(nil, gofakeit.ErrorDatabase())
 
-		err := svc.CloseDay(ctx, 1)
+		_, err := svc.ClosingBalance(ctx, account(), 1)
 
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "read ledger entries error")
+	})
+}
+
+func TestLedgerService_Reject(t *testing.T) {
+	t.Run("when an instruction is refused then the rejection is recorded", func(t *testing.T) {
+		ctx := context.Background()
+
+		repo := ledger_mock.NewMockRepository(t)
+		svc := ledger.NewService(repo)
+
+		repo.EXPECT().
+			AppendError(mock.Anything, mock.Anything).
+			Return(nil)
+
+		err := svc.Reject(ctx, creditEvent(), "2001", "unknown account")
+
+		assert.Error(t, err, "the caller still learns the instruction failed")
+		assert.Contains(t, err.Error(), "unknown account")
 	})
 }
