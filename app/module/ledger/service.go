@@ -204,7 +204,11 @@ func (s *service) sum(
 	}
 	total := acc.Opening
 	for _, e := range entries {
-		total = total.Add(e.Amount)
+		next, err := total.Add(e.Amount)
+		if err != nil {
+			return entity.Money{}, err
+		}
+		total = next
 	}
 	return total, nil
 }

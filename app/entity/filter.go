@@ -1,7 +1,5 @@
 package entity
 
-import "strconv"
-
 // Filters narrow a Read. They follow the boilerplate's XFilter convention, with
 // one simplification: there is no pagination, because pagination is a transport
 // concern and this core has no transport.
@@ -58,19 +56,4 @@ type FeeAssessmentFilter struct {
 type EventFilter struct {
 	AccountID  string
 	PostingDay Day
-}
-
-// FeeAssessment records that an account-day has been charged an overdraft fee.
-//
-// It exists so the "at most once per day per account" cap is a stored row with
-// an identity rather than a key in a map hidden inside a service.
-type FeeAssessment struct {
-	AccountID string
-	Day       Day
-}
-
-// ID is the composite key, so Delete has the same one-string signature as every
-// other Delete in the codebase.
-func (f FeeAssessment) ID() string {
-	return f.AccountID + "#" + strconv.Itoa(int(f.Day))
 }

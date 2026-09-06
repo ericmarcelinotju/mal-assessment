@@ -28,11 +28,13 @@ const EnvFeeReversalPolicy = "LEDGER_FEE_REVERSAL_POLICY"
 // environment deep inside it, so tests select a policy without mutating
 // process state.
 type Config struct {
-	// OverdraftFeeMinor is the overdraft fee in minor units of the account's
-	// own currency: 25.00 AED == 2500. Assessed at most once per account per
-	// day. See NUMBERS.md for why the fee is bound to the account currency
+	// OverdraftFeeMajor is the overdraft fee in major units of the account's own
+	// currency: 25 means AED 25.00 and BHD 25.000. Assessed at most once per
+	// account per day. Held in major units so no scale conversion is needed at
+	// the use site -- a divisor inlined there would be a constant living outside
+	// this file. See NUMBERS.md for why the fee is bound to the account currency
 	// rather than denominated in AED for every account.
-	OverdraftFeeMinor int64
+	OverdraftFeeMajor int64
 
 	// Daily interest is InterestRateNum/InterestRateDen per day = 0.04%.
 	// Kept as an exact rational; the engine never sees a floating point number.
@@ -57,7 +59,7 @@ type Config struct {
 
 func Default() Config {
 	return Config{
-		OverdraftFeeMinor:  2500,
+		OverdraftFeeMajor:  25,
 		InterestRateNum:    4,
 		InterestRateDen:    10000,
 		WindowDays:         6,

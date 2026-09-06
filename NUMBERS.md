@@ -12,7 +12,7 @@ Others are **chosen**, and have to be defended outright.
 
 ## Given by the brief
 
-### `OverdraftFeeMinor = 2500` — the overdraft fee, 25.00
+### `OverdraftFeeMajor = 25` — the overdraft fee
 
 Given. What was chosen is the **denomination**.
 
@@ -29,6 +29,12 @@ supplies none. Three options:
 ACC-002 never goes negative, so the canonical stream never exercises this — but
 the engine still needs an answer, and the other two are worse.
 `TestFee_IsDenominatedInTheAccountCurrency` pins it.
+
+Held in **major** units rather than minor. The fee is 25 units of whichever
+currency the account holds, so storing 2500 would have forced a `/100` divisor
+at the use site — a constant living outside `config/`, which the working
+agreement forbids. In major units the value goes straight into
+`decimal.NewFromInt` and there is no conversion left to get wrong.
 
 **Why not 12.50?** The value is given, so the question is really *why not make
 the fee proportional*. Because a flat fee is what the brief specifies, and

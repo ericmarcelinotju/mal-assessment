@@ -67,14 +67,22 @@ func SplitInstalments(total Money, n int) ([]Money, error) {
 		if int64(i) < extra {
 			amountMinor = amountMinor.Add(step)
 		}
-		parts = append(parts, NewMoney(amountMinor.Mul(unit), ccy))
+		part, err := NewMoney(amountMinor.Mul(unit), ccy)
+		if err != nil {
+			return nil, err
+		}
+		parts = append(parts, part)
 	}
 
 	// Conservation is an invariant, not a hope: assert it rather than trust the
 	// arithmetic above.
 	sum := Zero(ccy)
 	for _, p := range parts {
-		sum = sum.Add(p)
+		next, err := sum.Add(p)
+		if err != nil {
+			return nil, err
+		}
+		sum = next
 	}
 	if !sum.Equal(total) {
 		return nil, apperror.New(apperror.ErrInternalValidation,

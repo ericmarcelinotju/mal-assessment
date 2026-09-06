@@ -73,7 +73,11 @@ func (s *service) NetAccrual(
 	}
 	total := entity.Zero(acc.Currency)
 	for _, a := range accruals {
-		total = total.Add(a.Amount)
+		next, err := total.Add(a.Amount)
+		if err != nil {
+			return entity.Money{}, err
+		}
+		total = next
 	}
 	return total, nil
 }
@@ -114,14 +118,20 @@ func (s *service) Accrue(ctx context.Context, acc entity.Account, processingDay 
 		// charging twice for one condition.
 		target := entity.Zero(acc.Currency)
 		if balance.IsPositive() {
-			target = balance.MulRatioHalfUp(s.cfg.InterestRateNum, s.cfg.InterestRateDen)
+			target, err = balance.MulRatioHalfUp(s.cfg.InterestRateNum, s.cfg.InterestRateDen)
+			if err != nil {
+				return err
+			}
 		}
 
 		booked, err := s.NetAccrual(ctx, acc, day)
 		if err != nil {
 			return err
 		}
-		delta := target.Sub(booked)
+		delta, err := target.Sub(booked)
+		if err != nil {
+			return err
+		}
 		if delta.IsZero() {
 			continue
 		}
@@ -167,7 +177,11 @@ func (s *service) Capitalise(ctx context.Context, acc entity.Account, day entity
 
 	total := entity.Zero(acc.Currency)
 	for _, a := range accruals {
-		total = total.Add(a.Amount)
+		next, err := total.Add(a.Amount)
+		if err != nil {
+			return err
+		}
+		total = next
 	}
 	if total.IsZero() {
 		return nil

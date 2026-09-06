@@ -111,7 +111,10 @@ func (s *service) Authorize(ctx context.Context, acc entity.Account, ev entity.E
 	if err != nil {
 		return err
 	}
-	after := available.Sub(ev.Amount)
+	after, err := available.Sub(ev.Amount)
+	if err != nil {
+		return err
+	}
 
 	auth := entity.Authorization{
 		AuthID:     ev.AuthID,
@@ -213,12 +216,16 @@ func (s *service) ActiveHolds(
 		}
 		switch a.State {
 		case entity.AuthApproved:
-			total = total.Add(a.Hold)
+			if total, err = total.Add(a.Hold); err != nil {
+				return entity.Money{}, err
+			}
 		case entity.AuthSettled:
 			// The hold stood until the settlement landed, so it still reduces
 			// availability on the days before that.
 			if day < a.SettledDay {
-				total = total.Add(a.Hold)
+				if total, err = total.Add(a.Hold); err != nil {
+					return entity.Money{}, err
+				}
 			}
 		}
 	}
@@ -238,5 +245,5 @@ func (s *service) AvailableBalance(
 	if err != nil {
 		return entity.Money{}, err
 	}
-	return balance.Sub(holds), nil
+	return balance.Sub(holds)
 }

@@ -66,7 +66,8 @@ func TestMoney_MulRatioHalfUp(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.balance+" "+c.currency.String()+" -- "+c.note, func(t *testing.T) {
-			got := entity.MustParseMoney(c.balance, c.currency).MulRatioHalfUp(4, 10000)
+			got, err := entity.MustParseMoney(c.balance, c.currency).MulRatioHalfUp(4, 10000)
+			assert.NoError(t, err)
 			assert.Equal(t, c.want, got.String())
 		})
 	}
@@ -79,19 +80,23 @@ func TestMoney_HalfUpRoundsAwayFromZero(t *testing.T) {
 	// deliberate act with a failing test attached rather than a silent drift.
 	t.Run("when the result is exactly a half then it rounds away from zero", func(t *testing.T) {
 		// 0.125 at 2dp: half-up gives 0.13, banker's rounding would give 0.12.
-		half := entity.NewMoney(decimal.RequireFromString("0.125"), entity.AED)
+		half, err := entity.NewMoney(decimal.RequireFromString("0.125"), entity.AED)
+		assert.NoError(t, err)
 		assert.Equal(t, "0.13", half.String())
 
-		negHalf := entity.NewMoney(decimal.RequireFromString("-0.125"), entity.AED)
+		negHalf, err := entity.NewMoney(decimal.RequireFromString("-0.125"), entity.AED)
+		assert.NoError(t, err)
 		assert.Equal(t, "-0.13", negHalf.String())
 	})
 }
 
-func TestMoney_CurrencyMismatchPanics(t *testing.T) {
-	// Mixing currencies on one account is a programming error, not a runtime
-	// condition. Returning an error would make every call site carry a check it
-	// can only ignore; panicking makes the bug loud and immediate.
-	t.Run("when adding across currencies then it panics", func(t *testing.T) {
-		assert.Panics(t, func() { _ = aed("1.00").Add(bhd("1.000")) })
+func TestMoney_CurrencyMismatchIsAnError(t *testing.T) {
+	// Mixing currencies on one account is a programming error and cannot arise
+	// on this stream -- every sum is within one account. It is still reported
+	// rather than panicked on: a ledger that aborts the process on a data problem
+	// is worse than one that says what went wrong.
+	t.Run("when adding across currencies then it returns an error", func(t *testing.T) {
+		_, err := aed("1.00").Add(bhd("1.000"))
+		assert.Error(t, err, "a currency mismatch is reported, not panicked on")
 	})
 }

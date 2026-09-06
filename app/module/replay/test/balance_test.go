@@ -72,11 +72,11 @@ func TestBalance_BackValuedEntryDepressesEveryLaterDay(t *testing.T) {
 		// design working, not a discrepancy: a back-valued debit costs the
 		// account the debit plus the interest it would have earned.
 		for day := entity.Day(2); day <= 5; day++ {
-			delta := row(t, before, "A", day).ClosingBalance.Sub(row(t, after, "A", day).ClosingBalance)
+			delta := mustSub(t, row(t, before, "A", day).ClosingBalance, row(t, after, "A", day).ClosingBalance)
 			assertMoney(t, aed("100.00"), delta, "day %d must fall by the back-valued debit", day)
 		}
 
-		day6 := row(t, before, "A", 6).ClosingBalance.Sub(row(t, after, "A", 6).ClosingBalance)
+		day6 := mustSub(t, row(t, before, "A", 6).ClosingBalance, row(t, after, "A", 6).ClosingBalance)
 		assertMoney(t, aed("100.20"), day6,
 			"day 6 also carries the 0.20 of interest the debit cost the account")
 
@@ -99,7 +99,7 @@ func TestBalance_HoldsDoNotMoveTheLedger(t *testing.T) {
 		assertMoney(t, aed("625.00"), day3.ClosingBalance, "the hold must not touch the ledger")
 		assertMoney(t, aed("200.00"), day3.ActiveHolds, "")
 		assertMoney(t, aed("425.00"), day3.AvailableBalance, "")
-		assertMoney(t, day3.ClosingBalance.Sub(day3.ActiveHolds), day3.AvailableBalance, "")
+		assertMoney(t, mustSub(t, day3.ClosingBalance, day3.ActiveHolds), day3.AvailableBalance, "")
 	})
 
 	t.Run("when the hold settles then it stops reducing availability", func(t *testing.T) {
@@ -120,7 +120,7 @@ func TestBalance_LogSumsToTheFinalPosition(t *testing.T) {
 		total := entity.Zero(entity.AED)
 		for _, e := range entries(t, s) {
 			if e.AccountID == replay.ACC001 {
-				total = total.Add(e.Amount)
+				total = mustAdd(t, total, e.Amount)
 			}
 		}
 		assertMoney(t, aed("390.93"), total, "")

@@ -266,3 +266,34 @@ in `git log`, which is the check on them.
 
   Every figure is unchanged: three fees, 390.93, 466.03, 10.008, one expected
   failure.
+
+- **00:11** Brought the code in line with AGENTS.md. Four things were out of
+  compliance.
+
+  **No panics except at startup.** `entity.Money` had four: unknown currency in
+  `NewMoney`, currency mismatch in `Add`/`Sub`, and division by zero in
+  `MulRatioHalfUp`. All now return errors, threaded through the ~20 call sites
+  that fold amounts. `Zero` was made total instead — zero rounded to any scale
+  is still zero, so it needs no scale lookup and cannot fail, which keeps every
+  accumulator opening cleanly rather than with an error check. `MustParseMoney`
+  keeps its panic: it builds the canonical stream and test fixtures from
+  compile-time literals, the `Must` prefix is the Go convention for exactly
+  that, and it runs at startup.
+
+  **Never inline a constant at its use site.** `fee` was doing
+  `decimal.NewFromInt(s.cfg.OverdraftFeeMinor).Div(decimal.NewFromInt(100))` —
+  the 100 was a constant outside `config/`. The config now holds
+  `OverdraftFeeMajor = 25`, which is also truer to the rule it encodes: the fee
+  is 25 units of the account's own currency, not 2500 minor units of one.
+  NUMBERS.md updated to match.
+
+  **`app/entity/filter.go` holds only filters.** `FeeAssessment`, a value type
+  with a method, had been sitting in there; moved to `app/entity/fee_assessment.go`.
+
+  **No new helpers without asking.** I had started adding an `entity.Sum` fold
+  while converting the arithmetic and removed it — the folds are written out at
+  each call site instead. The two `mustAdd`/`mustSub` helpers I did add are
+  confined to the test packages, where a currency mismatch means a broken test.
+
+  Every figure is unchanged: three fees, 390.93, 466.03, 10.008, one expected
+  failure.

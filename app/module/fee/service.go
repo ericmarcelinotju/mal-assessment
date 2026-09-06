@@ -82,11 +82,8 @@ func (s *service) Delete(ctx context.Context, id string) error {
 // currency. ACC-002 never goes negative, so this is not exercised by the
 // canonical stream -- but the module has to have an answer, and silently
 // booking AED into a BHD account would be the worse one. See NUMBERS.md.
-func (s *service) amount(acc entity.Account) entity.Money {
-	return entity.NewMoney(
-		decimal.NewFromInt(s.cfg.OverdraftFeeMinor).Div(decimal.NewFromInt(100)),
-		acc.Currency,
-	)
+func (s *service) amount(acc entity.Account) (entity.Money, error) {
+	return entity.NewMoney(decimal.NewFromInt(s.cfg.OverdraftFeeMajor), acc.Currency)
 }
 
 // Assess sweeps every day of the window up to and including the processing day,
@@ -115,7 +112,10 @@ func (s *service) amount(acc entity.Account) entity.Money {
 // the canonical events do not discriminate ascending-with-cascade from
 // simultaneous evaluation. The synthetic cascade test covers that gap.
 func (s *service) Assess(ctx context.Context, acc entity.Account, processingDay entity.Day) error {
-	amount := s.amount(acc)
+	amount, err := s.amount(acc)
+	if err != nil {
+		return err
+	}
 
 	for day := entity.Day(1); day <= processingDay; day++ {
 		charged, err := s.Read(ctx, entity.FeeAssessmentFilter{AccountID: acc.ID, Day: day})

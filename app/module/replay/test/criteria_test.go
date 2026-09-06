@@ -195,7 +195,7 @@ func TestCriterion6_RefusedUnderDefaultPolicy(t *testing.T) {
 		net := entity.Zero(entity.AED)
 		for _, e := range entries(t, s) {
 			if e.AccountID == replay.ACC001 && (e.IsFee() || e.IsFeeReversal()) {
-				net = net.Add(e.Amount)
+				net = mustAdd(t, net, e.Amount)
 			}
 		}
 		assertMoney(t, aed("0.00"), net, "fees return to their pre-E7 value of nothing")
@@ -205,7 +205,7 @@ func TestCriterion6_RefusedUnderDefaultPolicy(t *testing.T) {
 // C7: "The three BHD instalments in E10 must each be BHD 3.334."  REFUSED.
 func TestCriterion7_Refused(t *testing.T) {
 	t.Run("when each instalment is 3.334 then the credit is 10.002", func(t *testing.T) {
-		three := bhd("3.334").Add(bhd("3.334")).Add(bhd("3.334"))
+		three := mustAdd(t, mustAdd(t, bhd("3.334"), bhd("3.334")), bhd("3.334"))
 		assertMoney(t, bhd("10.002"), three, "0.002 credited that nobody instructed")
 	})
 
@@ -241,7 +241,7 @@ func TestCriterion8_Refused(t *testing.T) {
 
 		daily := entity.Zero(entity.AED)
 		for day := entity.Day(1); day <= 6; day++ {
-			daily = daily.Add(row(t, s, replay.ACC001, day).InterestAccrued)
+			daily = mustAdd(t, daily, row(t, s, replay.ACC001, day).InterestAccrued)
 		}
 		assertMoney(t, daily, row(t, s, replay.ACC001, 6).Capitalisation.Amount,
 			"exact equality, with no remainder to discard")
@@ -256,7 +256,7 @@ func TestCriterion8_Refused(t *testing.T) {
 				r6 := row(t, s, id, 6)
 				daily := entity.Zero(r6.Currency)
 				for day := entity.Day(1); day <= 6; day++ {
-					daily = daily.Add(row(t, s, id, day).InterestAccrued)
+					daily = mustAdd(t, daily, row(t, s, id, day).InterestAccrued)
 				}
 				assertMoney(t, daily, r6.Capitalisation.Amount, "%s under %s", id, policy)
 			}

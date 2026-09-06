@@ -38,7 +38,7 @@ func TestScenario_DefaultPolicy(t *testing.T) {
 		total := entity.Zero(entity.AED)
 		for _, e := range entries(t, s) {
 			if e.AccountID == replay.ACC001 && e.IsFee() {
-				total = total.Add(e.Amount)
+				total = mustAdd(t, total, e.Amount)
 			}
 		}
 		assertMoney(t, aed("-75.00"), total, "")
@@ -117,7 +117,7 @@ func TestScenario_FeeReversalPolicy(t *testing.T) {
 		total := entity.Zero(entity.AED)
 		for _, e := range entries(t, s) {
 			if e.AccountID == replay.ACC001 && (e.IsFee() || e.IsFeeReversal()) {
-				total = total.Add(e.Amount)
+				total = mustAdd(t, total, e.Amount)
 			}
 		}
 		assertMoney(t, aed("0.00"), total, "three fees assessed, three reversed")
@@ -139,7 +139,7 @@ func TestScenario_PolicyDelta(t *testing.T) {
 		none := row(t, run(t, config.FeeReversalNone), replay.ACC001, 6).ClosingBalance
 		reversal := row(t, run(t, config.FeeReversalOnCauseReversal), replay.ACC001, 6).ClosingBalance
 
-		assertMoney(t, aed("75.10"), reversal.Sub(none),
+		assertMoney(t, aed("75.10"), mustSub(t, reversal, none),
 			"75.00 of fees plus 0.10 of interest those fees cost the account")
 	})
 }

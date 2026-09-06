@@ -178,3 +178,20 @@ func countFees(t *testing.T, s stack, accountID string) (assessed, reversed int)
 	}
 	return assessed, reversed
 }
+
+// mustAdd and mustSub keep the arithmetic in an assertion readable. A currency
+// mismatch in a test is a broken test, so it fails immediately rather than
+// being threaded through the assertion.
+func mustAdd(t *testing.T, a, b entity.Money) entity.Money {
+	t.Helper()
+	res, err := a.Add(b)
+	assert.NoError(t, err)
+	return res
+}
+
+func mustSub(t *testing.T, a, b entity.Money) entity.Money {
+	t.Helper()
+	res, err := a.Sub(b)
+	assert.NoError(t, err)
+	return res
+}

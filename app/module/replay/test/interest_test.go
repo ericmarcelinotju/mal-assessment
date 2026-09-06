@@ -95,7 +95,7 @@ func TestInterest_RestatesBackValuedDays(t *testing.T) {
 			r := row(t, s, replay.ACC001, day)
 			sum := entity.Zero(entity.AED)
 			for _, a := range r.AccrualTrail {
-				sum = sum.Add(a.Amount)
+				sum = mustAdd(t, sum, a.Amount)
 			}
 			assertMoney(t, r.InterestAccrued, sum, "day %d trail must sum to its net", day)
 		}
@@ -111,7 +111,7 @@ func TestInterest_CapitalisationSumsExactly(t *testing.T) {
 
 		daily := entity.Zero(entity.AED)
 		for day := entity.Day(1); day <= 6; day++ {
-			daily = daily.Add(row(t, s, replay.ACC001, day).InterestAccrued)
+			daily = mustAdd(t, daily, row(t, s, replay.ACC001, day).InterestAccrued)
 		}
 		assertMoney(t, aed("0.93"), daily, "")
 
@@ -169,7 +169,7 @@ func TestInterest_CapitalisationSumsExactly(t *testing.T) {
 
 		daily := entity.Zero(entity.BHD)
 		for day := entity.Day(1); day <= 6; day++ {
-			daily = daily.Add(row(t, s, replay.ACC002, day).InterestAccrued)
+			daily = mustAdd(t, daily, row(t, s, replay.ACC002, day).InterestAccrued)
 		}
 		assertMoney(t, bhd("0.008"), daily, "0.004 on day 5 and 0.004 on day 6")
 
@@ -209,7 +209,7 @@ func TestInterest_UnderFeeReversalPolicy(t *testing.T) {
 			assertMoney(t, aed(amount), row(t, s, replay.ACC001, day).InterestAccrued, "day %d", day)
 		}
 		for day := entity.Day(1); day <= 6; day++ {
-			total = total.Add(row(t, s, replay.ACC001, day).InterestAccrued)
+			total = mustAdd(t, total, row(t, s, replay.ACC001, day).InterestAccrued)
 		}
 		assertMoney(t, aed("1.03"), total, "")
 		assertMoney(t, aed("1.03"), row(t, s, replay.ACC001, 6).Capitalisation.Amount,

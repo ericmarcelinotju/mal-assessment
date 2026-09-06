@@ -20,7 +20,7 @@ func TestSplitInstalments_ConservesValue(t *testing.T) {
 
 		sum := entity.Zero(entity.BHD)
 		for _, p := range parts {
-			sum = sum.Add(p)
+			sum = mustAdd(t, sum, p)
 		}
 		assertMoney(t, bhd("10.000"), sum, "")
 	})
@@ -31,14 +31,14 @@ func TestSplitInstalments_ConservesValue(t *testing.T) {
 // BHD 3.334.
 func TestSplitInstalments_RefutesCriterion7(t *testing.T) {
 	t.Run("when each instalment is 3.334 then the credit becomes 10.002", func(t *testing.T) {
-		three := bhd("3.334").Add(bhd("3.334")).Add(bhd("3.334"))
+		three := mustAdd(t, mustAdd(t, bhd("3.334"), bhd("3.334")), bhd("3.334"))
 		assert.Equal(t, "10.002", three.String(),
 			"criterion 7 credits 0.002 that nobody instructed")
 		assert.False(t, three.Equal(bhd("10.000")))
 	})
 
 	t.Run("when each instalment is 3.333 then the credit becomes 9.999", func(t *testing.T) {
-		three := bhd("3.333").Add(bhd("3.333")).Add(bhd("3.333"))
+		three := mustAdd(t, mustAdd(t, bhd("3.333"), bhd("3.333")), bhd("3.333"))
 		assert.Equal(t, "9.999", three.String(),
 			"the other equal split loses 0.001 that was instructed")
 	})
@@ -52,7 +52,7 @@ func TestSplitInstalments_RefutesCriterion7(t *testing.T) {
 		parts, err := entity.SplitInstalments(bhd("10.000"), 3)
 		assert.NoError(t, err)
 
-		spread := parts[0].Sub(parts[2])
+		spread := mustSub(t, parts[0], parts[2])
 		assertMoney(t, bhd("0.001"), spread,
 			"parts differ by exactly one minor unit -- the minimum possible")
 	})
@@ -73,7 +73,7 @@ func TestSplitInstalments_EdgeCases(t *testing.T) {
 
 		sum := entity.Zero(entity.BHD)
 		for _, p := range parts {
-			sum = sum.Add(p)
+			sum = mustAdd(t, sum, p)
 		}
 		assertMoney(t, bhd("-10.000"), sum, "a negative split must conserve too")
 		assert.Equal(t, "-3.334", parts[0].String())
@@ -104,7 +104,7 @@ func TestSplitInstalments_EdgeCases(t *testing.T) {
 
 				sum := entity.Zero(amount.Currency())
 				for _, p := range parts {
-					sum = sum.Add(p)
+					sum = mustAdd(t, sum, p)
 				}
 				assertMoney(t, amount, sum, "splitting %s into %d parts", amount.Display(), n)
 			}

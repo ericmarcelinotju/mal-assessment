@@ -19,32 +19,49 @@ import (
 // later. Rounding happens once, here, at the boundary.
 //
 // Money is a value type. Every operation returns a new Money; nothing mutates.
+//
+// Every operation that can fail returns an error rather than panicking. A
+// currency mismatch is a programming error and cannot arise on this stream --
+// every sum is within one account -- but a ledger that aborts the process on a
+// data problem is worse than one that reports it, and the working agreement
+// rules out panics outside startup.
 type Money struct {
 	amount decimal.Decimal
 	ccy    Currency
 }
 
 // NewMoney quantises d to the currency's scale, rounding half away from zero.
-func NewMoney(d decimal.Decimal, ccy Currency) Money {
+// It fails only on a currency with no known scale, which would otherwise be
+// silently defaulted -- and defaulting is how a JPY amount ends up a hundred
+// times too small.
+func NewMoney(d decimal.Decimal, ccy Currency) (Money, error) {
 	scale, ok := ccy.Scale()
 	if !ok {
-		panic(apperror.New(apperror.ErrCurrencyMismatch, "unknown currency "+string(ccy)))
+		return Money{}, apperror.New(apperror.ErrCurrencyMismatch,
+			"unknown currency "+string(ccy))
 	}
-	return Money{amount: d.Round(scale), ccy: ccy}
+	return Money{amount: d.Round(scale), ccy: ccy}, nil
 }
 
 // Zero is the additive identity for a currency.
-func Zero(ccy Currency) Money { return NewMoney(decimal.Zero, ccy) }
+//
+// It needs no scale lookup and so cannot fail: zero rounded to any number of
+// places is still zero. Keeping it total is what lets every accumulator start
+// cleanly instead of opening with an error check.
+func Zero(ccy Currency) Money {
+	return Money{amount: decimal.Zero, ccy: ccy}
+}
 
 // ParseMoney builds an amount from a decimal string such as "1200.00" or
 // "10.000". It rejects any input carrying more decimal places than the currency
 // allows, rather than rounding it away: silently truncating input is how a
-// ledger loses money it was told about. Contrast NewMoney, which rounds
-// deliberately because its input is a computed value, not a stated one.
+// ledger loses money it was explicitly told about. Contrast NewMoney, which
+// rounds deliberately because its input is a computed value, not a stated one.
 func ParseMoney(s string, ccy Currency) (Money, error) {
 	scale, ok := ccy.Scale()
 	if !ok {
-		return Money{}, apperror.New(apperror.ErrCurrencyMismatch, "unknown currency "+string(ccy))
+		return Money{}, apperror.New(apperror.ErrCurrencyMismatch,
+			"unknown currency "+string(ccy))
 	}
 	s = strings.ReplaceAll(strings.TrimSpace(s), ",", "")
 
@@ -59,8 +76,14 @@ func ParseMoney(s string, ccy Currency) (Money, error) {
 	return Money{amount: d.Round(scale), ccy: ccy}, nil
 }
 
-// MustParseMoney is for the canonical event stream and tests, where the inputs
-// are literals fixed at compile time.
+// MustParseMoney is for the canonical event stream and test fixtures, where the
+// inputs are literals fixed at compile time and a failure means the program is
+// malformed rather than the data is.
+//
+// This is the one panic the working agreement allows: it runs at startup, it is
+// flagged by the Must prefix as Go convention requires, and the alternative --
+// threading an error out of a table of hard-coded literals -- would obscure the
+// stream this whole exercise is about.
 func MustParseMoney(s string, ccy Currency) Money {
 	m, err := ParseMoney(s, ccy)
 	if err != nil {
@@ -75,42 +98,47 @@ func (m Money) IsZero() bool             { return m.amount.IsZero() }
 func (m Money) IsNegative() bool         { return m.amount.IsNegative() }
 func (m Money) IsPositive() bool         { return m.amount.IsPositive() }
 
-// Add returns m+other. Adding across currencies is a programming error, not a
-// runtime condition to be handled: the ledger never holds mixed-currency
-// entries on one account, so this panics rather than returning an error that
-// every call site would have to ignore.
-func (m Money) Add(other Money) Money {
-	m.assertSameCurrency(other)
-	return Money{amount: m.amount.Add(other.amount), ccy: m.ccy}
+// Add returns m+other, or an error if the currencies differ.
+func (m Money) Add(other Money) (Money, error) {
+	if err := m.sameCurrency(other); err != nil {
+		return Money{}, err
+	}
+	return Money{amount: m.amount.Add(other.amount), ccy: m.ccy}, nil
 }
 
-func (m Money) Sub(other Money) Money {
-	m.assertSameCurrency(other)
-	return Money{amount: m.amount.Sub(other.amount), ccy: m.ccy}
+// Sub returns m-other, or an error if the currencies differ.
+func (m Money) Sub(other Money) (Money, error) {
+	if err := m.sameCurrency(other); err != nil {
+		return Money{}, err
+	}
+	return Money{amount: m.amount.Sub(other.amount), ccy: m.ccy}, nil
 }
 
+// Neg cannot fail: negating an amount does not involve a second currency.
 func (m Money) Neg() Money { return Money{amount: m.amount.Neg(), ccy: m.ccy} }
 
 func (m Money) Equal(other Money) bool {
 	return m.ccy == other.ccy && m.amount.Equal(other.amount)
 }
 
-func (m Money) assertSameCurrency(other Money) {
+func (m Money) sameCurrency(other Money) error {
 	if m.ccy != other.ccy {
-		panic(apperror.New(apperror.ErrCurrencyMismatch,
-			"cannot combine "+string(m.ccy)+" and "+string(other.ccy)))
+		return apperror.New(apperror.ErrCurrencyMismatch,
+			"cannot combine "+string(m.ccy)+" and "+string(other.ccy))
 	}
+	return nil
 }
 
 // MulRatioHalfUp returns round(m * num/den) at the currency's own scale,
 // rounding half away from zero (decimal.Round's mode).
 //
 // The rate is kept as an exact rational rather than a parsed literal so that
-// "0.04% per day" never passes through a float64. Add and Sub above are exact,
-// so this is the only rounding in the entire interest calculation.
-func (m Money) MulRatioHalfUp(num, den int64) Money {
+// "0.04% per day" never passes through a float64. Add and Sub are exact, so
+// this is the only rounding in the entire interest calculation.
+func (m Money) MulRatioHalfUp(num, den int64) (Money, error) {
 	if den == 0 {
-		panic(apperror.New(apperror.ErrInternalValidation, "division by zero in MulRatioHalfUp"))
+		return Money{}, apperror.New(apperror.ErrInternalValidation,
+			"division by zero in MulRatioHalfUp")
 	}
 	raw := m.amount.Mul(decimal.NewFromInt(num)).Div(decimal.NewFromInt(den))
 	return NewMoney(raw, m.ccy)
