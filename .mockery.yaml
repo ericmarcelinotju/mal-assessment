@@ -11,3 +11,9 @@ packages:
     config:
       recursive: true
       all: true
+
+# Note: unlike the originating boilerplate, the generated mocks ARE committed.
+# The boilerplate gitignores them and regenerates in `make test`, which assumes
+# mockery is installed. The brief requires a suite anyone can run, so `go test
+# ./...` has to work on a fresh clone with nothing but a Go toolchain.
+# `make generate-mock` still regenerates them in place.
