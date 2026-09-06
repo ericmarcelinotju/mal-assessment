@@ -176,9 +176,10 @@ app/module/
   replay/         orchestration: routes each event, runs the day close, builds the report
 ```
 
-Every module is `repository.go` + `service.go` + `mock/` + `test/`, with the
-larger ones splitting the service across topic files — `ledger/posting.go`,
-`ledger/balance.go`, `fee/assess.go`, `interest/accrue.go`.
+Every module is exactly two files -- `service.go` and `repository.go` -- plus a
+generated `mock/` and, where there are tests, a `test/`. No topic files, no
+helpers alongside: if it is behaviour it is in the service, if it is storage it
+is in the repository, and there is nowhere else for it to go.
 
 There are **no controllers and no routes**. Those are the REST delivery layer in
 the boilerplate, and the brief forbids a web layer, so `main.go` calls the

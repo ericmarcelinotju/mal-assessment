@@ -216,3 +216,17 @@ in `git log`, which is the check on them.
   money and instalment tests to `app/entity/test`; the mock-driven service tests
   to their own module. Every figure is unchanged: three fees, 390.93, 466.03,
   10.008, one expected failure.
+
+- **23:48** Collapsed each module to exactly two files, `service.go` and
+  `repository.go`. The topic files I had split out — `ledger/posting.go`,
+  `ledger/balance.go`, `authorization/authorize.go`,
+  `authorization/settlement.go`, `fee/assess.go`, `interest/accrue.go`,
+  `replay/report.go` — are merged into their module's service, and
+  `replay/stream.go` into its repository, the canonical stream being seed data
+  for the event store rather than behaviour.
+
+  Nothing moved between modules and no code changed, so every figure is
+  unchanged: three fees, 390.93, 466.03, 10.008, one expected failure. The only
+  real work was regrouping imports afterwards — merging flattened stdlib and
+  third-party into one alphabetical block, which reads wrong in Go and is not
+  something gofmt puts back.
