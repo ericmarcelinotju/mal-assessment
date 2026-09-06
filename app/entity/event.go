@@ -63,9 +63,18 @@ const (
 	DirectionDebit  Direction = "DEBIT"
 )
 
-func (e Event) IsMonetary() bool {
+// HasStatedAmount reports whether the event carries an amount of its own that
+// must agree with the account currency.
+//
+// A REVERSAL deliberately does not. Its amount is derived from the entries it
+// reverses, which is the only way a reversal is guaranteed to undo exactly what
+// was done -- restating the amount in the reversal instruction would let a typo
+// leave a residue behind, and a residue on a reversal stays invisible until it
+// is expensive. So a reversal is monetary in effect while carrying no stated
+// amount to validate.
+func (e Event) HasStatedAmount() bool {
 	switch e.Type {
-	case EventCredit, EventDebit, EventSettlement, EventReversal:
+	case EventCredit, EventDebit, EventSettlement, EventAuthorization:
 		return true
 	default:
 		return false
