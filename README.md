@@ -6,9 +6,9 @@ replay is deterministic and every figure below is reproducible.
 
 Built on the supplied Go boilerplate: same layout (`app/entity`,
 `app/module/<name>/test`), same idioms (interface + unexported struct + `New`,
-coded errors, `log/slog`), with gin, MongoDB, viper and the private
-`jet_go_lib` module removed. A public repository has to build for anyone who
-clones it, and the brief forbids the layers those dependencies serve.
+coded errors, `log/slog`), with gin, MongoDB, viper and a privately hosted
+internal library removed. A public repository has to build for anyone who clones
+it, and the brief forbids the layers those dependencies serve.
 
 ---
 
