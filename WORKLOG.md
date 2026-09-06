@@ -131,7 +131,7 @@ in `git log`, which is the check on them.
   Same replay, same three fees, same 390.93 and 466.03, same single expected
   test failure.
 
-- **23:04** Second cleanup pass, this time asking of every symbol not "is it
+- **22:51** Second cleanup pass, this time asking of every symbol not "is it
   used" but "does it serve the ledger question". Removed `AppError.Is` and
   `AppError.Unwrap` — nothing in the ledger inspects an error programmatically,
   because rejections are recorded on the log as data and reported under their own
