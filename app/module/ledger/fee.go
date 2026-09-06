@@ -43,7 +43,7 @@ func (s *service) assessOverdraftFees(acc entity.Account, processingDay entity.D
 			continue
 		}
 		entry := s.log.append(entity.LedgerEntry{
-			EventID:    entity.EventID("FEE-" + acc.ID + "-D" + itoa(int(day))),
+			EventID:    entity.EventID("FEE-D" + itoa(int(day))),
 			AccountID:  acc.ID,
 			PostingDay: processingDay,
 			ValueDate:  day,

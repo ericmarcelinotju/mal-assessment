@@ -102,7 +102,7 @@ func (s *service) capitalise(acc entity.Account, day entity.Day) error {
 	}
 
 	s.log.append(entity.LedgerEntry{
-		EventID:    entity.EventID("INT-" + acc.ID),
+		EventID:    entity.EventID("INT"),
 		AccountID:  acc.ID,
 		PostingDay: day,
 		ValueDate:  day,
