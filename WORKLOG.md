@@ -32,3 +32,41 @@ the work happened. Not reconstructed afterwards.
   construction invariant so arbitrary-precision dust cannot enter the ledger.
 - **22:18** Verified `decimal.Round` half-away-from-zero against all eight
   interest figures the replay will produce, before building anything on top.
+- **22:26** Engine complete and verified against the hand computation: ACC-001
+  closes Day 6 at AED 390.93 with three fees, ACC-002 at BHD 10.008, E6
+  rejected, Auth-B declined at −245.00. Found one real bug on the first full
+  run — `REVERSAL` events carry no stated amount, so the currency guard rejected
+  E9. Split `IsMonetary` into `HasStatedAmount`; a reversal derives its amount
+  from the entries it reverses, which is the only way it is guaranteed to undo
+  exactly what was done.
+- **22:31** Verified the `on_cause_reversal` branch reaches a fixed point on the
+  pre-E7 counterfactual: 466.03, interest 1.03, net fees 0.00. Criterion 6
+  becomes exactly true under it.
+- **22:40** Report renderer. Printed both clocks and the full interest
+  restatement trail rather than net figures — the Day 2 trail
+  (+0.10 / −0.10 / +0.09) is the whole argument for the append-only accrual
+  design and is worth showing rather than describing.
+- **22:55** Test suite. Two tests exist to be honest rather than to pass:
+  `TestFee_CascadeIsCoveredSynthetically` fills a gap the brief's own data
+  leaves — on the canonical stream the fee cascade changes no outcome, so the
+  given events cannot distinguish that design from the alternative.
+  `TestFee_Criterion2BoundaryCase` shows criterion 2 fails by the size of one
+  settlement rather than being absurd.
+- **23:02** Caught a bad test of my own. The subtest claiming to show the
+  0.93-versus-0.92 divergence used `MulRatioHalfUp(4, 1000000)` — wrong by two
+  orders of magnitude — and passed vacuously. Rewritten to sum the unrounded
+  daily products in `decimal` and assert 0.918 → 0.92 against the engine's 0.93.
+  The claim now has evidence behind it instead of a green tick.
+- **23:10** Annotated failing test. It asserts Day 6 closes at 466.03 and fails
+  at 390.93. Left red deliberately: the repair exists in the same repository,
+  one environment variable away, but the brief's rules contain no de-assessment
+  primitive and making my own extension the default would hide the disagreement
+  worth having.
+- **23:14** `make` on this machine (cygwin build under Git Bash) exits 127 and
+  prints nothing, including for `make --version` — a broken local toolchain, not
+  a Makefile problem. The Makefile is standard GNU make and is shipped, but the
+  README leads with the plain `go` commands, which are the ones I actually ran.
+- **23:30** Wrote README, NUMBERS, AMBIGUITIES and REJECTED. Deliberately wrote
+  the strongest case *for* each refused criterion before the case against it;
+  criterion 6 in particular is a better argument than the other three and
+  deserved to be met rather than dismissed.
