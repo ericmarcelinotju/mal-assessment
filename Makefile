@@ -1,4 +1,4 @@
-.PHONY: run run-reversal test verify test-coverage fmt vet lint clean-mock generate-mock
+.PHONY: run run-reversal test verify test-coverage fmt vet lint
 
 ## run: replay the six-day stream under the literal reading of the brief
 run:
@@ -36,18 +36,3 @@ vet:
 
 lint: fmt vet
 
-## The ledger core has no collaborators to mock -- it is a pure function of the
-## event stream, with no repository, transport or clock. The mockery config is
-## kept for consistency with the wider codebase, but the suite does not need it
-## and `make test` does not run it.
-clean-mock:
-	@echo "--- cleaning mocks ---"
-ifeq ($(OS),Windows_NT)
-	@powershell -Command "Get-ChildItem -Recurse -Filter '*_mock.go' | Remove-Item -Force"
-else
-	@find . -name '*_mock.go' -delete
-endif
-
-generate-mock: clean-mock
-	@echo "--- generating mocks by mockery ---"
-	@mockery

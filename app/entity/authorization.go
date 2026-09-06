@@ -29,6 +29,3 @@ type Authorization struct {
 	SettledDay    Day
 	SettledAmount Money
 }
-
-// IsActive reports whether the hold still reduces available balance.
-func (a Authorization) IsActive() bool { return a.State == AuthApproved }

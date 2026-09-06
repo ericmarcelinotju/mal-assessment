@@ -55,14 +55,6 @@ type Event struct {
 	Instalments int
 }
 
-// Direction of an entry on the account.
-type Direction string
-
-const (
-	DirectionCredit Direction = "CREDIT"
-	DirectionDebit  Direction = "DEBIT"
-)
-
 // HasStatedAmount reports whether the event carries an amount of its own that
 // must agree with the account currency.
 //

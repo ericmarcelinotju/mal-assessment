@@ -1,7 +1,5 @@
 package entity
 
-import "github.com/shopspring/decimal"
-
 // Currency is an ISO 4217 alphabetic code. Scale is the ISO 4217 exponent: the
 // number of decimal places in which amounts of that currency are stored and
 // rounded. AED is 2, BHD is 3.
@@ -23,16 +21,6 @@ var scales = map[Currency]int32{
 func (c Currency) Scale() (int32, bool) {
 	s, ok := scales[c]
 	return s, ok
-}
-
-// MinorUnit is the smallest representable amount in this currency: 0.01 AED,
-// 0.001 BHD. Used by the largest-remainder instalment allocator.
-func (c Currency) MinorUnit() decimal.Decimal {
-	s, ok := c.Scale()
-	if !ok {
-		return decimal.NewFromInt(1)
-	}
-	return decimal.New(1, -s)
 }
 
 func (c Currency) String() string { return string(c) }

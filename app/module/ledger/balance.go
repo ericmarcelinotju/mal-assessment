@@ -22,19 +22,6 @@ func (s *service) closingBalance(acc entity.Account, day entity.Day) entity.Mone
 	})
 }
 
-// closingBalanceAsObserved is the same figure restricted to what the ledger
-// knew at the end of a given processing day. Balances are bitemporal: the Day 2
-// closing balance is +250.00 observed from Day 2 and -370.00 observed from
-// Day 5, because E7 had not yet been posted on Day 2.
-//
-// Acceptance criterion 1 pins both coordinates -- "the Day 2 closing balance,
-// evaluated at end of Day 5" -- which is what makes it answerable.
-func (s *service) closingBalanceAsObserved(acc entity.Account, day, observedOn entity.Day) entity.Money {
-	return s.balanceWhere(acc, func(e entity.LedgerEntry) bool {
-		return e.AccountID == acc.ID && e.ValueDate <= day && e.PostingDay <= observedOn
-	})
-}
-
 // closingBalanceExcludingSeq is the closing balance with one entry left out.
 // The fee reversal sweep needs it: the question "is this day still overdrawn?"
 // has to be asked without the fee that is itself under consideration, or the

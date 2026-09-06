@@ -1,3 +1,6 @@
+// Package apperror provides coded errors, carried over from the originating
+// codebase's convention so that a failure can be asserted on by category rather
+// than by matching message text.
 package apperror
 
 import "fmt"
@@ -27,5 +30,9 @@ func (e *AppError) Is(target error) bool {
 }
 
 func New(code ErrorCode, message string, err ...error) *AppError {
-	return factory.New(code, message, err...)
+	appError := &AppError{Code: code, Message: message}
+	if len(err) > 0 {
+		appError.err = err[0]
+	}
+	return appError
 }

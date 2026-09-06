@@ -178,7 +178,7 @@ app/module/ledger/
   stream.go                  the ten canonical events
   test/                      the suite
 app/presenter/report.go      text rendering
-apperror/, logger/           de-branded from the boilerplate
+apperror/                    coded errors, carried over from the boilerplate
 ```
 
 `Money` wraps `shopspring/decimal` and adds one invariant: every amount is

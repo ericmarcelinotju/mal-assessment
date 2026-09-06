@@ -42,17 +42,16 @@ func (s *service) assessOverdraftFees(acc entity.Account, processingDay entity.D
 		if !s.closingBalance(acc, day).IsNegative() {
 			continue
 		}
-		entry := s.log.append(entity.LedgerEntry{
+		s.log.append(entity.LedgerEntry{
 			EventID:    entity.EventID("FEE-D" + itoa(int(day))),
 			AccountID:  acc.ID,
 			PostingDay: processingDay,
 			ValueDate:  day,
 			Amount:     fee.Neg(),
-			Direction:  entity.DirectionDebit,
 			Origin:     entity.OriginOverdraftFee,
 			Memo:       "overdraft fee for day " + itoa(int(day)),
 		})
-		s.feeDays[feeKey{acc.ID, day}] = entry.Seq
+		s.feeDays[feeKey{acc.ID, day}] = struct{}{}
 	}
 	return nil
 }
@@ -121,7 +120,6 @@ func (s *service) reverseFeesOnCauseReversal(acc entity.Account, processingDay e
 				PostingDay:  processingDay,
 				ValueDate:   fee.ValueDate,
 				Amount:      fee.Amount.Neg(),
-				Direction:   entity.DirectionCredit,
 				Origin:      entity.OriginFeeReversal,
 				Memo:        "reversal of overdraft fee for day " + itoa(int(fee.ValueDate)),
 				ReversesSeq: fee.Seq,

@@ -19,9 +19,11 @@ const (
 // A correction is a new entry with the opposite sign, never an edit.
 //
 // Signed convention: Amount carries its own sign. A debit of 950.00 is stored
-// as -950.00 rather than as a positive number plus a direction flag, so that a
-// balance is a plain sum and cannot be got wrong by mishandling the flag.
-// Direction is retained for presentation only.
+// as -950.00 rather than as a positive number plus a separate direction flag,
+// so a balance is a plain sum and cannot be got wrong by mishandling the flag.
+// There is deliberately no Direction field: a flag alongside a signed amount is
+// a second source of truth that can disagree with the first, and the
+// disagreement would be silent. Callers that need the word read the sign.
 type LedgerEntry struct {
 	Seq        int     // append order, unique and monotonic
 	EventID    EventID // the event that produced this entry
@@ -29,7 +31,6 @@ type LedgerEntry struct {
 	PostingDay Day   // when the ledger learned of it
 	ValueDate  Day   // when it economically applies
 	Amount     Money // signed
-	Direction  Direction
 	Origin     EntryOrigin
 	Memo       string
 

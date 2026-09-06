@@ -107,22 +107,8 @@ func (s *service) capitalise(acc entity.Account, day entity.Day) error {
 		PostingDay: day,
 		ValueDate:  day,
 		Amount:     total,
-		Direction:  entity.DirectionCredit,
 		Origin:     entity.OriginCapitalisation,
 		Memo:       "interest capitalisation, sum of daily accruals",
 	})
 	return nil
-}
-
-// capitalisedTotal is the sum of every accrual record for an account, which is
-// the amount capitalise books. Exposed for the report and for the
-// sum-exactness assertion in the tests.
-func (s *service) capitalisedTotal(acc entity.Account) entity.Money {
-	total := entity.Zero(acc.Currency)
-	for _, a := range s.log.accruals {
-		if a.AccountID == acc.ID {
-			total = total.Add(a.Amount)
-		}
-	}
-	return total
 }

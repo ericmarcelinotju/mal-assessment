@@ -320,5 +320,31 @@ built to expose.
 **A nil-factory panic inherited from the boilerplate.** The copied `apperror`
 package left its package-global factory nil until `Init` was called, so the very
 first `apperror.New` dereferenced nil — a latent panic on every error path,
-including one in the boilerplate's own test. Fixed by initialising the factory
-eagerly, with `Init` retained for setting a service prefix.
+including one in the boilerplate's own test. First fixed by initialising the
+factory eagerly. Then deleted outright: the factory existed only to prefix codes
+with a service identifier, this service sets no prefix, and an indirection whose
+only observable behaviour is a way to crash is not worth keeping. Removing the
+mechanism is a better fix than initialising it.
+
+**Carried-over infrastructure that nothing used.** A late pass removed
+everything the boilerplate contributed that this ledger never actually
+exercised, because unused scaffolding in a small deliverable reads as either
+copy-paste or as a hint that something is meant to be there:
+
+- the `logger` package — a slog handler that lifted `request_id` out of the
+  context, which is an HTTP concern in a codebase with no HTTP layer. The engine
+  never logged through it; `main.go` now prints its one fatal error to stderr.
+- `.mockery.yaml` and the `generate-mock` / `clean-mock` targets. The ledger is a
+  pure function of the event stream — no repository, no transport, no clock — so
+  there is nothing to mock, and the suite never used them.
+- the `Direction` field on `LedgerEntry`, with its type and constants. It was
+  written at eleven call sites and read at none: `Amount` already carries its own
+  sign. Two sources of truth for the same fact, one of which nothing consults, is
+  a silent disagreement waiting to happen.
+- four unused error codes, `Money.Cmp`, `Currency.MinorUnit`,
+  `Authorization.IsActive`, and two unreachable service methods
+  (`capitalisedTotal`, duplicating logic already inside `capitalise`, and
+  `closingBalanceAsObserved`, whose bitemporal reading the tests get more
+  convincingly by replaying a genuine subset of the stream).
+- the value stored in the `feeDays` map, which was only ever tested for
+  presence — now `map[feeKey]struct{}`.

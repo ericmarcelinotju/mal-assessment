@@ -113,3 +113,20 @@ in `git log`, which is the check on them.
   Rewritten against the actual commit timestamps in `git log`. A worklog the
   brief asks to be real is not the place to round times up to how long the work
   felt.
+
+- **22:52** Removed every unused module and piece of carried-over infrastructure,
+  found by scanning each declared symbol for references rather than by eye. Gone:
+  the `logger` package (a slog handler pulling `request_id` from context, in a
+  codebase with no HTTP layer, that nothing ever logged through), `.mockery.yaml`
+  and its Makefile targets (the ledger has no collaborators to mock), the
+  `apperror` factory indirection (its only job was a service prefix this service
+  never sets), four unused error codes, three unused entity methods, two
+  unreachable service methods, and the `Direction` field on `LedgerEntry`.
+
+  `Direction` is the one worth naming. It was written at eleven call sites and
+  read at none — `Amount` already carries its own sign. Keeping it would have
+  meant two sources of truth for the same fact, only one of which anything
+  consults, which is a disagreement that would surface silently and late.
+
+  Same replay, same three fees, same 390.93 and 466.03, same single expected
+  test failure.

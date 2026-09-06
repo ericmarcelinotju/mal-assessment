@@ -36,7 +36,7 @@ func (s *service) settle(acc entity.Account, ev entity.Event) ([]entity.LedgerEn
 			"authorization "+ev.AuthID+" is "+string(auth.State)+", cannot settle")
 	}
 
-	entries, err := s.postAmount(acc, ev, ev.Amount.Neg(), entity.DirectionDebit, entity.OriginSettlement)
+	entries, err := s.postAmount(acc, ev, ev.Amount.Neg(), entity.OriginSettlement)
 	if err != nil {
 		return nil, err
 	}
@@ -79,17 +79,12 @@ func (s *service) reverse(acc entity.Account, ev entity.Event) ([]entity.LedgerE
 
 	out := make([]entity.LedgerEntry, 0, len(targets))
 	for _, t := range targets {
-		dir := entity.DirectionCredit
-		if t.Amount.IsPositive() {
-			dir = entity.DirectionDebit
-		}
 		out = append(out, s.log.append(entity.LedgerEntry{
 			EventID:     ev.ID,
 			AccountID:   acc.ID,
 			PostingDay:  ev.PostingDay,
 			ValueDate:   t.ValueDate,
 			Amount:      t.Amount.Neg(),
-			Direction:   dir,
 			Origin:      entity.OriginReversal,
 			Memo:        "reversal of " + string(t.EventID),
 			ReversesSeq: t.Seq,

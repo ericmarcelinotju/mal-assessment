@@ -16,5 +16,3 @@ tmp/
 .vscode
 .idea
 
-# generated mocks
-**/*_mock.go

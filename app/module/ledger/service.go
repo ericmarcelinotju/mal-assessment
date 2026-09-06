@@ -43,7 +43,7 @@ type service struct {
 	// feeDays records the days already charged an overdraft fee, so the "once
 	// per day per account" cap is enforced by construction rather than by
 	// re-scanning the log.
-	feeDays map[feeKey]int
+	feeDays map[feeKey]struct{}
 }
 
 type feeKey struct {
@@ -60,7 +60,7 @@ func New(cfg config.Config, accounts ...entity.Account) Service {
 		accounts: make(map[string]entity.Account, len(accounts)),
 		log:      newLog(),
 		auths:    make(map[string]*entity.Authorization),
-		feeDays:  make(map[feeKey]int),
+		feeDays:  make(map[feeKey]struct{}),
 	}
 	for _, a := range accounts {
 		s.accounts[a.ID] = a

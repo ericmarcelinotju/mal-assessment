@@ -91,11 +91,6 @@ func (m Money) Sub(other Money) Money {
 
 func (m Money) Neg() Money { return Money{amount: m.amount.Neg(), ccy: m.ccy} }
 
-func (m Money) Cmp(other Money) int {
-	m.assertSameCurrency(other)
-	return m.amount.Cmp(other.amount)
-}
-
 func (m Money) Equal(other Money) bool {
 	return m.ccy == other.ccy && m.amount.Equal(other.amount)
 }

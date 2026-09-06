@@ -20,9 +20,9 @@ func (s *service) Post(ev entity.Event) ([]entity.LedgerEntry, error) {
 
 	switch ev.Type {
 	case entity.EventCredit:
-		return s.postAmount(acc, ev, ev.Amount, entity.DirectionCredit, entity.OriginInstruction)
+		return s.postAmount(acc, ev, ev.Amount, entity.OriginInstruction)
 	case entity.EventDebit:
-		return s.postAmount(acc, ev, ev.Amount.Neg(), entity.DirectionDebit, entity.OriginInstruction)
+		return s.postAmount(acc, ev, ev.Amount.Neg(), entity.OriginInstruction)
 	case entity.EventAuthorization:
 		return nil, s.authorize(acc, ev)
 	case entity.EventSettlement:
@@ -42,8 +42,7 @@ func (s *service) Post(ev entity.Event) ([]entity.LedgerEntry, error) {
 // overdraft fee exists to price. Refusing it would mean the fee rule could
 // never fire at all.
 func (s *service) postAmount(
-	acc entity.Account, ev entity.Event, signed entity.Money,
-	dir entity.Direction, origin entity.EntryOrigin,
+	acc entity.Account, ev entity.Event, signed entity.Money, origin entity.EntryOrigin,
 ) ([]entity.LedgerEntry, error) {
 	parts := []entity.Money{signed}
 	if ev.Instalments > 1 {
@@ -66,7 +65,6 @@ func (s *service) postAmount(
 			PostingDay: ev.PostingDay,
 			ValueDate:  ev.ValueDate,
 			Amount:     p,
-			Direction:  dir,
 			Origin:     origin,
 			Memo:       memo,
 		}))
