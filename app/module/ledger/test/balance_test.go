@@ -1,6 +1,7 @@
 package ledger_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,7 +23,7 @@ func TestBalance_IsBitemporal(t *testing.T) {
 		// Only E1 and E2 have been posted. E7 does not exist yet, so nothing
 		// about the account is negative and no fee is due.
 		cfg := config.Default()
-		svc := ledger.New(cfg, ledger.CanonicalAccounts()...)
+		svc := ledger.NewService(cfg, ledger.NewRepository(), ledger.CanonicalAccounts()...)
 
 		var upToDay2 []entity.Event
 		for _, ev := range ledger.CanonicalStream() {
@@ -30,7 +31,7 @@ func TestBalance_IsBitemporal(t *testing.T) {
 				upToDay2 = append(upToDay2, ev)
 			}
 		}
-		assert.NoError(t, svc.Replay(upToDay2))
+		assert.NoError(t, svc.Replay(context.Background(), upToDay2))
 
 		assertMoney(t, aed("250.00"), row(t, svc, ledger.ACC001, 2).ClosingBalance, "")
 	})
@@ -54,13 +55,13 @@ func TestBalance_BackValuedEntryDepressesEveryLaterDay(t *testing.T) {
 		cfg := config.Default()
 		accounts := []entity.Account{entity.NewAccount("A", entity.AED, "0.00")}
 
-		before := ledger.New(cfg, accounts...)
-		assert.NoError(t, before.Replay([]entity.Event{
+		before := ledger.NewService(cfg, ledger.NewRepository(), accounts...)
+		assert.NoError(t, before.Replay(context.Background(), []entity.Event{
 			{ID: "C", Type: entity.EventCredit, PostingDay: 1, ValueDate: 1, AccountID: "A", Amount: aed("1000.00")},
 		}))
 
-		after := ledger.New(cfg, accounts...)
-		assert.NoError(t, after.Replay([]entity.Event{
+		after := ledger.NewService(cfg, ledger.NewRepository(), accounts...)
+		assert.NoError(t, after.Replay(context.Background(), []entity.Event{
 			{ID: "C", Type: entity.EventCredit, PostingDay: 1, ValueDate: 1, AccountID: "A", Amount: aed("1000.00")},
 			{ID: "D", Type: entity.EventDebit, PostingDay: 5, ValueDate: 2, AccountID: "A", Amount: aed("100.00")},
 		}))
@@ -117,7 +118,7 @@ func TestBalance_LogSumsToTheFinalPosition(t *testing.T) {
 		svc := replay(t, config.FeeReversalNone)
 
 		total := entity.Zero(entity.AED)
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			if e.AccountID == ledger.ACC001 {
 				total = total.Add(e.Amount)
 			}

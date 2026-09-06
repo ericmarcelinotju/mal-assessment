@@ -157,3 +157,31 @@ in `git log`, which is the check on them.
   simply was not there. The boilerplate is backed up in full (46 files, 96MB,
   including the gitignored `config/default/*.yml`) before deletion, since it was
   never under version control.
+
+- **23:14** Refactored the module onto the boilerplate's foldering convention,
+  which I had not followed. It now has `repository.go` / `service.go` /
+  `controller.go` / `route.go`, interfaces with unexported structs behind `New*`
+  constructors, `context.Context` first on every method, generated mocks in
+  `mock/`, and `main.go` reduced to a composition root — repository, then
+  service over it, then routes.
+
+  The substantive gain is the `Repository` seam. What had been an unexported
+  `log` struct is now an interface with an in-memory implementation, so the
+  service depends on a contract rather than a slice. Append-only is now enforced
+  by the shape of that interface — there is no `Update`, no `Delete`, no method
+  taking a sequence number and writing to it — rather than by a convention
+  someone has to remember. It also gives the service's error handling something
+  to be tested against: `service_test.go` drives the repository failure paths
+  through the mock, which were previously unreachable code nobody had run.
+
+  Two deviations I could not avoid. The boilerplate's `controller.go` and
+  `route.go` are gin HTTP handlers and the brief forbids a web layer, so they
+  keep the shape — free functions taking `Service`, plus `NewRoutes` — with an
+  `io.Writer` as the delivery target. And there is no `app/model`, because that
+  layer is the database representation and there is no database.
+
+  Deleted the `app/module/user` reference copy afterwards: it imports the
+  private modules and would have broken the build for anyone cloning.
+
+  Every figure is unchanged through the refactor — three fees, 390.93, 466.03,
+  10.008, and the same single expected failure.

@@ -1,0 +1,13 @@
+template: testify
+dir: "{{.InterfaceDir}}"
+structname: "Mock{{.InterfaceName}}"
+pkgname: "{{.SrcPackageName}}_mock"
+filename: "mock/{{.InterfaceName | snakecase | lower}}_mock.go"
+inpackage: false
+all: false
+
+packages:
+  github.com/ericmarcelinotju/mal-assessment/app/module:
+    config:
+      recursive: true
+      all: true

@@ -1,6 +1,7 @@
 package ledger_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,16 +17,16 @@ func TestFee_E7CausesThreeFees(t *testing.T) {
 	t.Run("when E7 is posted then days 2, 4 and 5 each take a fee", func(t *testing.T) {
 		svc := replay(t, config.FeeReversalNone)
 
-		assessed, reversed := countFees(svc, ledger.ACC001)
+		assessed, reversed := countFees(t, svc, ledger.ACC001)
 		assert.Equal(t, 3, assessed, "criterion 2 claims one fee; there are three")
 		assert.Equal(t, 0, reversed, "the default policy has no de-assessment primitive")
 
 		for _, day := range []entity.Day{2, 4, 5} {
-			a, _ := feesOn(svc, ledger.ACC001, day)
+			a, _ := feesOn(t, svc, ledger.ACC001, day)
 			assert.Equal(t, 1, a, "day %d must carry exactly one fee", day)
 		}
 		for _, day := range []entity.Day{1, 3, 6} {
-			a, _ := feesOn(svc, ledger.ACC001, day)
+			a, _ := feesOn(t, svc, ledger.ACC001, day)
 			assert.Equal(t, 0, a, "day %d must carry no fee", day)
 		}
 	})
@@ -36,7 +37,7 @@ func TestFee_E7CausesThreeFees(t *testing.T) {
 		// different questions, and the log records both.
 		svc := replay(t, config.FeeReversalNone)
 
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			if e.IsFee() {
 				assert.Equal(t, entity.Day(5), e.PostingDay,
 					"fee for day %d was learned of on day 5", e.ValueDate)
@@ -53,10 +54,10 @@ func TestFee_E7CausesThreeFees(t *testing.T) {
 				withoutE7 = append(withoutE7, ev)
 			}
 		}
-		svc := ledger.New(config.Default(), ledger.CanonicalAccounts()...)
-		assert.NoError(t, svc.Replay(withoutE7))
+		svc := newService(config.FeeReversalNone, ledger.CanonicalAccounts()...)
+		assert.NoError(t, svc.Replay(context.Background(), withoutE7))
 
-		assessed, _ := countFees(svc, ledger.ACC001)
+		assessed, _ := countFees(t, svc, ledger.ACC001)
 		assert.Equal(t, 0, assessed)
 		assertMoney(t, aed("465.00"), row(t, svc, ledger.ACC001, 5).ClosingBalance, "")
 	})
@@ -84,10 +85,10 @@ func TestFee_Criterion2BoundaryCase(t *testing.T) {
 	}
 
 	t.Run("when Auth-A settles 185.00 then three days go negative", func(t *testing.T) {
-		svc := ledger.New(config.Default(), ledger.CanonicalAccounts()...)
-		assert.NoError(t, svc.Replay(build("185.00")))
+		svc := newService(config.FeeReversalNone, ledger.CanonicalAccounts()...)
+		assert.NoError(t, svc.Replay(context.Background(), build("185.00")))
 
-		assessed, _ := countFees(svc, ledger.ACC001)
+		assessed, _ := countFees(t, svc, ledger.ACC001)
 		assert.Equal(t, 3, assessed)
 	})
 
@@ -97,13 +98,13 @@ func TestFee_Criterion2BoundaryCase(t *testing.T) {
 		// One fee, dated day 2 -- exactly what criterion 2 asserts. The
 		// criterion is not absurd; it is wrong about this stream by the size of
 		// one settlement.
-		svc := ledger.New(config.Default(), ledger.CanonicalAccounts()...)
-		assert.NoError(t, svc.Replay(build("5.00")))
+		svc := newService(config.FeeReversalNone, ledger.CanonicalAccounts()...)
+		assert.NoError(t, svc.Replay(context.Background(), build("5.00")))
 
-		assessed, _ := countFees(svc, ledger.ACC001)
+		assessed, _ := countFees(t, svc, ledger.ACC001)
 		assert.Equal(t, 1, assessed, "exactly one fee, and it is dated day 2")
 
-		a, _ := feesOn(svc, ledger.ACC001, 2)
+		a, _ := feesOn(t, svc, ledger.ACC001, 2)
 		assert.Equal(t, 1, a)
 	})
 }
@@ -123,14 +124,14 @@ func TestFee_CascadeIsCoveredSynthetically(t *testing.T) {
 		// against -26.00 it only reaches -16.00, so day 2 is charged as well.
 		// Without the cascade, day 2 would close positive and escape.
 		accounts := []entity.Account{entity.NewAccount("A", entity.AED, "0.00")}
-		svc := ledger.New(config.Default(), accounts...)
-		assert.NoError(t, svc.Replay([]entity.Event{
+		svc := newService(config.FeeReversalNone, accounts...)
+		assert.NoError(t, svc.Replay(context.Background(), []entity.Event{
 			{ID: "D", Type: entity.EventDebit, PostingDay: 1, ValueDate: 1, AccountID: "A", Amount: aed("1.00")},
 			{ID: "C", Type: entity.EventCredit, PostingDay: 2, ValueDate: 2, AccountID: "A", Amount: aed("10.00")},
 		}))
 
-		d1, _ := feesOn(svc, "A", 1)
-		d2, _ := feesOn(svc, "A", 2)
+		d1, _ := feesOn(t, svc, "A", 1)
+		d2, _ := feesOn(t, svc, "A", 2)
 		assert.Equal(t, 1, d1, "day 1 closes at -1.00")
 		assert.Equal(t, 1, d2, "day 2 closes at -16.00 only because of the day 1 fee")
 		assertMoney(t, aed("-41.00"), row(t, svc, "A", 2).ClosingBalance, "")
@@ -142,12 +143,12 @@ func TestFee_AtMostOncePerAccountPerDay(t *testing.T) {
 		// Day 2 is negative at the day-5 close and still negative at the day-6
 		// close. Without the cap it would be charged twice.
 		accounts := []entity.Account{entity.NewAccount("A", entity.AED, "0.00")}
-		svc := ledger.New(config.Default(), accounts...)
-		assert.NoError(t, svc.Replay([]entity.Event{
+		svc := newService(config.FeeReversalNone, accounts...)
+		assert.NoError(t, svc.Replay(context.Background(), []entity.Event{
 			{ID: "D", Type: entity.EventDebit, PostingDay: 2, ValueDate: 2, AccountID: "A", Amount: aed("100.00")},
 		}))
 
-		a, _ := feesOn(svc, "A", 2)
+		a, _ := feesOn(t, svc, "A", 2)
 		assert.Equal(t, 1, a, "one fee per account per day, however many closes run")
 	})
 }
@@ -160,13 +161,13 @@ func TestFee_IsDenominatedInTheAccountCurrency(t *testing.T) {
 	// decision is exercised. See NUMBERS.md.
 	t.Run("when a BHD account is overdrawn then the fee is BHD 25.000", func(t *testing.T) {
 		accounts := []entity.Account{entity.NewAccount("B", entity.BHD, "0.000")}
-		svc := ledger.New(config.Default(), accounts...)
-		assert.NoError(t, svc.Replay([]entity.Event{
+		svc := newService(config.FeeReversalNone, accounts...)
+		assert.NoError(t, svc.Replay(context.Background(), []entity.Event{
 			{ID: "D", Type: entity.EventDebit, PostingDay: 1, ValueDate: 1, AccountID: "B", Amount: bhd("1.000")},
 		}))
 
 		var fee entity.LedgerEntry
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			if e.IsFee() {
 				fee = e
 			}
@@ -182,7 +183,7 @@ func TestFee_ReversalPolicy(t *testing.T) {
 	t.Run("when the policy is none then fees survive the reversal of their cause", func(t *testing.T) {
 		svc := replay(t, config.FeeReversalNone)
 
-		assessed, reversed := countFees(svc, ledger.ACC001)
+		assessed, reversed := countFees(t, svc, ledger.ACC001)
 		assert.Equal(t, 3, assessed)
 		assert.Equal(t, 0, reversed)
 		assertMoney(t, aed("390.93"), row(t, svc, ledger.ACC001, 6).ClosingBalance, "")
@@ -191,7 +192,7 @@ func TestFee_ReversalPolicy(t *testing.T) {
 	t.Run("when the policy is on_cause_reversal then all three fees reverse", func(t *testing.T) {
 		svc := replay(t, config.FeeReversalOnCauseReversal)
 
-		assessed, reversed := countFees(svc, ledger.ACC001)
+		assessed, reversed := countFees(t, svc, ledger.ACC001)
 		assert.Equal(t, 3, assessed, "the fees were correctly assessed when the days were negative")
 		assert.Equal(t, 3, reversed, "and correctly undone once E9 removed the cause")
 
@@ -206,7 +207,7 @@ func TestFee_ReversalPolicy(t *testing.T) {
 		svc := replay(t, config.FeeReversalOnCauseReversal)
 
 		var fees, reversals int
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			switch {
 			case e.IsFee():
 				fees++
@@ -228,12 +229,12 @@ func TestFee_ReversalPolicy(t *testing.T) {
 		accounts := []entity.Account{entity.NewAccount("A", entity.AED, "0.00")}
 		cfg := config.Default()
 		cfg.FeeReversal = config.FeeReversalOnCauseReversal
-		svc := ledger.New(cfg, accounts...)
-		assert.NoError(t, svc.Replay([]entity.Event{
+		svc := ledger.NewService(cfg, ledger.NewRepository(), accounts...)
+		assert.NoError(t, svc.Replay(context.Background(), []entity.Event{
 			{ID: "D", Type: entity.EventDebit, PostingDay: 1, ValueDate: 1, AccountID: "A", Amount: aed("100.00")},
 		}))
 
-		assessed, reversed := countFees(svc, "A")
+		assessed, reversed := countFees(t, svc, "A")
 		assert.Equal(t, 6, assessed, "every day of the window closes negative")
 		assert.Equal(t, 0, reversed, "none of them is put right, so none is reversed")
 	})
@@ -252,22 +253,22 @@ func TestFee_SweepDoesNotOscillate(t *testing.T) {
 		cfg := config.Default()
 		cfg.FeeReversal = config.FeeReversalOnCauseReversal
 		accounts := []entity.Account{entity.NewAccount("A", entity.AED, "0.00")}
-		svc := ledger.New(cfg, accounts...)
+		svc := ledger.NewService(cfg, ledger.NewRepository(), accounts...)
 
 		// A debit that overdraws, then a reversal that puts it right.
-		assert.NoError(t, svc.Replay([]entity.Event{
+		assert.NoError(t, svc.Replay(context.Background(), []entity.Event{
 			{ID: "D", Type: entity.EventDebit, PostingDay: 1, ValueDate: 1, AccountID: "A", Amount: aed("50.00")},
 			{ID: "C", Type: entity.EventCredit, PostingDay: 2, ValueDate: 1, AccountID: "A", Amount: aed("50.00")},
 		}))
 
-		assessed, reversed := countFees(svc, "A")
+		assessed, reversed := countFees(t, svc, "A")
 		assert.Equal(t, assessed, reversed, "every fee assessed was also reversed exactly once")
 		assertMoney(t, aed("0.00"), row(t, svc, "A", 6).ClosingBalance,
 			"the account returns to zero, with no residue from the fee cycle")
 
 		// Closing the same day again must be idempotent.
-		before := len(svc.Entries())
-		assert.NoError(t, svc.CloseDay(6))
-		assert.Equal(t, before, len(svc.Entries()), "a repeated close must add nothing")
+		before := len(entries(t, svc))
+		assert.NoError(t, svc.CloseDay(context.Background(), 6))
+		assert.Equal(t, before, len(entries(t, svc)), "a repeated close must add nothing")
 	})
 }

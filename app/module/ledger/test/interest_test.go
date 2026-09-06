@@ -1,6 +1,7 @@
 package ledger_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/shopspring/decimal"
@@ -34,8 +35,8 @@ func TestInterest_DailyAccruals(t *testing.T) {
 		// on it as well would be charging twice for one condition, and the brief
 		// says positive balances only.
 		accounts := []entity.Account{entity.NewAccount("A", entity.AED, "0.00")}
-		svc := ledger.New(config.Default(), accounts...)
-		assert.NoError(t, svc.Replay([]entity.Event{
+		svc := newService(config.FeeReversalNone, accounts...)
+		assert.NoError(t, svc.Replay(context.Background(), []entity.Event{
 			{ID: "D", Type: entity.EventDebit, PostingDay: 1, ValueDate: 1, AccountID: "A", Amount: aed("100.00")},
 		}))
 
@@ -78,7 +79,7 @@ func TestInterest_RestatesBackValuedDays(t *testing.T) {
 		// what the ledger believed and when.
 		svc := replay(t, config.FeeReversalNone)
 
-		for _, a := range svc.Accruals() {
+		for _, a := range accruals(t, svc) {
 			assert.NotZero(t, a.Seq, "every accrual record carries its append position")
 		}
 
@@ -124,7 +125,7 @@ func TestInterest_CapitalisationSumsExactly(t *testing.T) {
 		svc := replay(t, config.FeeReversalNone)
 
 		var count int
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			if e.AccountID == ledger.ACC001 && e.Origin == entity.OriginCapitalisation {
 				count++
 				assert.Equal(t, entity.Day(6), e.ValueDate)

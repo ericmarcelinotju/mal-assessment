@@ -1,6 +1,7 @@
 package ledger
 
 import (
+	"context"
 	"sort"
 
 	"github.com/ericmarcelinotju/mal-assessment/app/entity"
@@ -19,9 +20,9 @@ import (
 // is one that produces different answers for the same facts. See AMBIGUITIES.md.
 //
 // Rejected instructions do not abort the replay. A declined authorization and
-// an orphan settlement are recorded outcomes, not failures of the engine, and
+// an orphan settlement are recorded outcomes, not failures of the service, and
 // the remaining events still have to be processed.
-func (s *service) Replay(events []entity.Event) error {
+func (s *service) Replay(ctx context.Context, events []entity.Event) error {
 	ordered := make([]entity.Event, len(events))
 	copy(ordered, events)
 	sort.SliceStable(ordered, func(i, j int) bool {
@@ -32,10 +33,10 @@ func (s *service) Replay(events []entity.Event) error {
 	for day := entity.Day(1); day <= entity.Day(s.cfg.WindowDays); day++ {
 		for next < len(ordered) && ordered[next].PostingDay == day {
 			//nolint:errcheck // rejections are recorded on the log and reported per day
-			_, _ = s.Post(ordered[next])
+			_, _ = s.Post(ctx, ordered[next])
 			next++
 		}
-		if err := s.CloseDay(day); err != nil {
+		if err := s.CloseDay(ctx, day); err != nil {
 			return err
 		}
 	}
@@ -61,23 +62,23 @@ func (s *service) Replay(events []entity.Event) error {
 // exercised here -- but an account closing Day 6 slightly negative would make it
 // decide whether interest can rescue a day from its overdraft fee. It cannot.
 // See AMBIGUITIES.md.
-func (s *service) CloseDay(day entity.Day) error {
+func (s *service) CloseDay(ctx context.Context, day entity.Day) error {
 	for _, id := range s.order {
 		acc := s.accounts[id]
 
-		if err := s.assessOverdraftFees(acc, day); err != nil {
+		if err := s.assessOverdraftFees(ctx, acc, day); err != nil {
 			return err
 		}
-		if err := s.reverseFeesOnCauseReversal(acc, day); err != nil {
+		if err := s.reverseFeesOnCauseReversal(ctx, acc, day); err != nil {
 			return err
 		}
 		// The reversal sweep changes balances, so interest is accrued against
 		// the post-sweep position.
-		if err := s.accrueInterest(acc, day); err != nil {
+		if err := s.accrueInterest(ctx, acc, day); err != nil {
 			return err
 		}
 		if day == entity.Day(s.cfg.CapitalisationDay) {
-			if err := s.capitalise(acc, day); err != nil {
+			if err := s.capitalise(ctx, acc, day); err != nil {
 				return err
 			}
 		}
@@ -88,52 +89,77 @@ func (s *service) CloseDay(day entity.Day) error {
 // Report builds one row per day per account from the log. Everything here is
 // derived on demand; no figure is cached at close time, so the report cannot
 // drift from the entries that justify it.
-func (s *service) Report() []entity.DayReport {
-	var out []entity.DayReport
+func (s *service) Report(ctx context.Context) ([]entity.DayReport, error) {
+	entries, err := s.Entries(ctx)
+	if err != nil {
+		return nil, err
+	}
+	accruals, err := s.Accruals(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ledgerErrors, err := s.Errors(ctx)
+	if err != nil {
+		return nil, err
+	}
+	auths := s.authorizations()
 
+	var out []entity.DayReport
 	for day := entity.Day(1); day <= entity.Day(s.cfg.WindowDays); day++ {
 		for _, id := range s.order {
 			acc := s.accounts[id]
+
+			closing, err := s.closingBalance(ctx, acc, day)
+			if err != nil {
+				return nil, err
+			}
+			available, err := s.availableBalance(ctx, acc, day)
+			if err != nil {
+				return nil, err
+			}
+			accrued, err := s.netAccrual(ctx, acc, day)
+			if err != nil {
+				return nil, err
+			}
 
 			row := entity.DayReport{
 				Day:              day,
 				AccountID:        acc.ID,
 				Currency:         acc.Currency,
-				ClosingBalance:   s.closingBalance(acc, day),
+				ClosingBalance:   closing,
 				ActiveHolds:      s.activeHolds(acc, day),
-				AvailableBalance: s.availableBalance(acc, day),
-				InterestAccrued:  s.netAccrual(acc.ID, day),
+				AvailableBalance: available,
+				InterestAccrued:  accrued,
 			}
 
-			for _, e := range s.log.entries {
+			for _, e := range entries {
 				if e.AccountID != acc.ID || e.ValueDate != day {
 					continue
 				}
-				switch {
-				case e.Origin == entity.OriginOverdraftFee:
+				switch e.Origin {
+				case entity.OriginOverdraftFee:
 					row.FeesAssessed = append(row.FeesAssessed, e)
-				case e.Origin == entity.OriginFeeReversal:
+				case entity.OriginFeeReversal:
 					row.FeesReversed = append(row.FeesReversed, e)
-				case e.Origin == entity.OriginCapitalisation:
-					cap := e
-					row.Capitalisation = &cap
+				case entity.OriginCapitalisation:
+					credit := e
+					row.Capitalisation = &credit
 				}
 				if e.Origin != entity.OriginCapitalisation {
 					row.Entries = append(row.Entries, e)
 				}
 			}
-
-			for _, a := range s.log.accruals {
+			for _, a := range accruals {
 				if a.AccountID == acc.ID && a.Day == day {
 					row.AccrualTrail = append(row.AccrualTrail, a)
 				}
 			}
-			for _, a := range s.authorizations() {
+			for _, a := range auths {
 				if a.AccountID == acc.ID && a.PostingDay == day {
 					row.Authorizations = append(row.Authorizations, a)
 				}
 			}
-			for _, e := range s.log.errors {
+			for _, e := range ledgerErrors {
 				if e.AccountID == acc.ID && e.Day == day {
 					row.Errors = append(row.Errors, e)
 				}
@@ -142,5 +168,5 @@ func (s *service) Report() []entity.DayReport {
 			out = append(out, row)
 		}
 	}
-	return out
+	return out, nil
 }

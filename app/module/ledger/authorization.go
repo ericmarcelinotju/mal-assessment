@@ -1,6 +1,8 @@
 package ledger
 
 import (
+	"context"
+
 	"github.com/ericmarcelinotju/mal-assessment/app/entity"
 	"github.com/ericmarcelinotju/mal-assessment/apperror"
 )
@@ -14,12 +16,16 @@ import (
 // stream (-245.00 before fees, -320.00 after), so the ordering is not
 // load-bearing here, but the choice is deliberate: an authorization is answered
 // in real time and cannot wait for a day-end batch that has not run yet.
-func (s *service) authorize(acc entity.Account, ev entity.Event) error {
+func (s *service) authorize(ctx context.Context, acc entity.Account, ev entity.Event) error {
 	if _, exists := s.auths[ev.AuthID]; exists {
-		return s.reject(ev, apperror.ErrDuplicateAuthID, "authorization "+ev.AuthID+" already exists")
+		return s.reject(ctx, ev, apperror.ErrDuplicateAuthID,
+			"authorization "+ev.AuthID+" already exists")
 	}
 
-	available := s.availableBalance(acc, ev.ValueDate)
+	available, err := s.availableBalance(ctx, acc, ev.ValueDate)
+	if err != nil {
+		return err
+	}
 	after := available.Sub(ev.Amount)
 
 	auth := &entity.Authorization{
@@ -39,7 +45,7 @@ func (s *service) authorize(acc entity.Account, ev entity.Event) error {
 		auth.State = entity.AuthDeclined
 		auth.DeclineNote = "available " + available.String() + " - hold " + ev.Amount.String() +
 			" = " + after.String() + ", below zero"
-		return s.reject(ev, apperror.ErrInsufficientFunds,
+		return s.reject(ctx, ev, apperror.ErrInsufficientFunds,
 			"authorization "+ev.AuthID+" declined: "+auth.DeclineNote)
 	}
 

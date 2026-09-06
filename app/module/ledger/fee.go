@@ -1,6 +1,8 @@
 package ledger
 
 import (
+	"context"
+
 	"github.com/shopspring/decimal"
 
 	"github.com/ericmarcelinotju/mal-assessment/app/entity"
@@ -33,16 +35,22 @@ import (
 // Day 2 fee narrows Day 3 from +30.00 to +5.00, which is still positive), so
 // the canonical events do not discriminate ascending-with-cascade from
 // simultaneous evaluation. TestFeeCascade covers that gap with a synthetic case.
-func (s *service) assessOverdraftFees(acc entity.Account, processingDay entity.Day) error {
+func (s *service) assessOverdraftFees(
+	ctx context.Context, acc entity.Account, processingDay entity.Day,
+) error {
 	fee := s.feeAmount(acc)
 	for day := entity.Day(1); day <= processingDay; day++ {
 		if _, charged := s.feeDays[feeKey{acc.ID, day}]; charged {
 			continue
 		}
-		if !s.closingBalance(acc, day).IsNegative() {
+		balance, err := s.closingBalance(ctx, acc, day)
+		if err != nil {
+			return err
+		}
+		if !balance.IsNegative() {
 			continue
 		}
-		s.log.append(entity.LedgerEntry{
+		if _, err := s.appendEntry(ctx, entity.LedgerEntry{
 			EventID:    entity.EventID("FEE-D" + itoa(int(day))),
 			AccountID:  acc.ID,
 			PostingDay: processingDay,
@@ -50,7 +58,9 @@ func (s *service) assessOverdraftFees(acc entity.Account, processingDay entity.D
 			Amount:     fee.Neg(),
 			Origin:     entity.OriginOverdraftFee,
 			Memo:       "overdraft fee for day " + itoa(int(day)),
-		})
+		}); err != nil {
+			return err
+		}
 		s.feeDays[feeKey{acc.ID, day}] = struct{}{}
 	}
 	return nil
@@ -63,18 +73,21 @@ func (s *service) assessOverdraftFees(acc entity.Account, processingDay entity.D
 // AED-denominated entry cannot be booked to a BHD account without an exchange
 // rate, and the brief supplies none, so the fee is treated as 25 units of the
 // account's currency. ACC-002 never goes negative, so this choice is not
-// exercised by the canonical stream -- but the engine has to have an answer, and
-// silently booking AED into a BHD account would be the worse one. See
+// exercised by the canonical stream -- but the service has to have an answer,
+// and silently booking AED into a BHD account would be the worse one. See
 // NUMBERS.md and AMBIGUITIES.md.
 func (s *service) feeAmount(acc entity.Account) entity.Money {
-	return entity.NewMoney(decimal.NewFromInt(s.cfg.OverdraftFeeMinor).Div(decimal.NewFromInt(100)), acc.Currency)
+	return entity.NewMoney(
+		decimal.NewFromInt(s.cfg.OverdraftFeeMinor).Div(decimal.NewFromInt(100)),
+		acc.Currency,
+	)
 }
 
 // reverseFeesOnCauseReversal is the acceptance-criterion-6 branch, active only
 // under LEDGER_FEE_REVERSAL_POLICY=on_cause_reversal.
 //
-// Criterion 6 claims that after E9 all balances and fees return to their
-// pre-E7 values. Under the brief as written that is false: the brief grants an
+// Criterion 6 claims that after E9 all balances and fees return to their pre-E7
+// values. Under the brief as written that is false: the brief grants an
 // assessment primitive and no de-assessment primitive, so the three fees stand
 // and the account is permanently 75.10 short of where it would have been.
 //
@@ -95,7 +108,9 @@ func (s *service) feeAmount(acc entity.Account) entity.Money {
 // the reversal test has a non-negative balance without its fee, so it would not
 // have been assessed in that state. The iteration cap is a guard against a
 // future rule change breaking that property, not against this one.
-func (s *service) reverseFeesOnCauseReversal(acc entity.Account, processingDay entity.Day) error {
+func (s *service) reverseFeesOnCauseReversal(
+	ctx context.Context, acc entity.Account, processingDay entity.Day,
+) error {
 	if s.cfg.FeeReversal != config.FeeReversalOnCauseReversal {
 		return nil
 	}
@@ -105,16 +120,31 @@ func (s *service) reverseFeesOnCauseReversal(acc entity.Account, processingDay e
 			return apperror.New(apperror.ErrNoConvergence,
 				"fee reversal sweep did not converge for "+acc.ID)
 		}
-		progressed := false
 
-		for _, fee := range s.log.Entries() {
-			if fee.AccountID != acc.ID || !fee.IsFee() || s.isReversed(fee.Seq) {
+		entries, err := s.Entries(ctx)
+		if err != nil {
+			return err
+		}
+		reversed := make(map[int]bool, len(entries))
+		for _, e := range entries {
+			if e.IsFeeReversal() {
+				reversed[e.ReversesSeq] = true
+			}
+		}
+
+		progressed := false
+		for _, fee := range entries {
+			if fee.AccountID != acc.ID || !fee.IsFee() || reversed[fee.Seq] {
 				continue
 			}
-			if s.closingBalanceExcludingSeq(acc, fee.ValueDate, fee.Seq).IsNegative() {
+			without, err := s.closingBalanceExcludingSeq(ctx, acc, fee.ValueDate, fee.Seq)
+			if err != nil {
+				return err
+			}
+			if without.IsNegative() {
 				continue
 			}
-			s.log.append(entity.LedgerEntry{
+			if _, err := s.appendEntry(ctx, entity.LedgerEntry{
 				EventID:     fee.EventID,
 				AccountID:   acc.ID,
 				PostingDay:  processingDay,
@@ -123,7 +153,9 @@ func (s *service) reverseFeesOnCauseReversal(acc entity.Account, processingDay e
 				Origin:      entity.OriginFeeReversal,
 				Memo:        "reversal of overdraft fee for day " + itoa(int(fee.ValueDate)),
 				ReversesSeq: fee.Seq,
-			})
+			}); err != nil {
+				return err
+			}
 			// Under this policy the day becomes chargeable again if it goes
 			// negative later: "once per day ever" only makes sense while fees
 			// are irreversible. See AMBIGUITIES.md.
@@ -135,15 +167,6 @@ func (s *service) reverseFeesOnCauseReversal(acc entity.Account, processingDay e
 			return nil
 		}
 	}
-}
-
-func (s *service) isReversed(seq int) bool {
-	for _, e := range s.log.entries {
-		if e.Origin == entity.OriginFeeReversal && e.ReversesSeq == seq {
-			return true
-		}
-	}
-	return false
 }
 
 func itoa(i int) string {

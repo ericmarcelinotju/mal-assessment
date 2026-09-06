@@ -1,6 +1,7 @@
 package ledger_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,8 +11,9 @@ import (
 	"github.com/ericmarcelinotju/mal-assessment/config"
 )
 
-func auth(svc ledger.Service, id string) (entity.Authorization, bool) {
-	for _, r := range svc.Report() {
+func auth(t *testing.T, svc ledger.Service, id string) (entity.Authorization, bool) {
+	t.Helper()
+	for _, r := range report(t, svc) {
 		for _, a := range r.Authorizations {
 			if a.AuthID == id {
 				return a, true
@@ -25,7 +27,7 @@ func TestAuthorization_AuthAIsApproved(t *testing.T) {
 	t.Run("when available covers the hold then the authorization is approved", func(t *testing.T) {
 		svc := replay(t, config.FeeReversalNone)
 
-		a, ok := auth(svc, "Auth-A")
+		a, ok := auth(t, svc, "Auth-A")
 		assert.True(t, ok)
 		// Day 2 available is 250.00; the 200.00 hold leaves 50.00, at or above
 		// zero, so it stands.
@@ -47,7 +49,7 @@ func TestAuthorization_AuthBIsDeclined(t *testing.T) {
 	t.Run("when available is already negative then the authorization is declined", func(t *testing.T) {
 		svc := replay(t, config.FeeReversalNone)
 
-		a, ok := auth(svc, "Auth-B")
+		a, ok := auth(t, svc, "Auth-B")
 		assert.True(t, ok, "a declined authorization is still recorded, so the report can explain it")
 		assert.Equal(t, entity.AuthDeclined, a.State)
 		assert.Contains(t, a.DeclineNote, "-245.00",
@@ -59,7 +61,7 @@ func TestAuthorization_AuthBIsDeclined(t *testing.T) {
 
 		assertMoney(t, aed("0.00"), row(t, svc, ledger.ACC001, 5).ActiveHolds,
 			"a declined authorization places no hold")
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			assert.NotEqual(t, entity.EventID("E8"), e.EventID,
 				"an authorization never produces a ledger entry, declined or not")
 		}
@@ -83,7 +85,7 @@ func TestAuthorization_AuthBIsDeclined(t *testing.T) {
 	// ordering would have decided the outcome.
 	t.Run("when fees are assessed first then Auth-B is still declined", func(t *testing.T) {
 		svc := replay(t, config.FeeReversalNone)
-		a, _ := auth(svc, "Auth-B")
+		a, _ := auth(t, svc, "Auth-B")
 		assert.Equal(t, entity.AuthDeclined, a.State)
 	})
 }
@@ -98,25 +100,25 @@ func TestAuthorization_BoundaryIsAtOrAboveZero(t *testing.T) {
 	accounts := []entity.Account{entity.NewAccount("A", entity.AED, "0.00")}
 
 	t.Run("when the hold lands exactly on zero then it is approved", func(t *testing.T) {
-		svc := ledger.New(config.Default(), accounts...)
-		assert.NoError(t, svc.Replay(append(append([]entity.Event{}, base...), entity.Event{
+		svc := newService(config.FeeReversalNone, accounts...)
+		assert.NoError(t, svc.Replay(context.Background(), append(append([]entity.Event{}, base...), entity.Event{
 			ID: "H", Type: entity.EventAuthorization, PostingDay: 1, ValueDate: 1,
 			AccountID: "A", Amount: aed("100.00"), AuthID: "exact",
 		})))
 
-		a, ok := auth(svc, "exact")
+		a, ok := auth(t, svc, "exact")
 		assert.True(t, ok)
 		assert.Equal(t, entity.AuthApproved, a.State, "zero is at or above zero")
 	})
 
 	t.Run("when the hold exceeds available by one minor unit then it is declined", func(t *testing.T) {
-		svc := ledger.New(config.Default(), accounts...)
-		assert.NoError(t, svc.Replay(append(append([]entity.Event{}, base...), entity.Event{
+		svc := newService(config.FeeReversalNone, accounts...)
+		assert.NoError(t, svc.Replay(context.Background(), append(append([]entity.Event{}, base...), entity.Event{
 			ID: "H", Type: entity.EventAuthorization, PostingDay: 1, ValueDate: 1,
 			AccountID: "A", Amount: aed("100.01"), AuthID: "over",
 		})))
 
-		a, ok := auth(svc, "over")
+		a, ok := auth(t, svc, "over")
 		assert.True(t, ok)
 		assert.Equal(t, entity.AuthDeclined, a.State)
 	})
@@ -125,15 +127,15 @@ func TestAuthorization_BoundaryIsAtOrAboveZero(t *testing.T) {
 func TestAuthorization_HoldsStackAgainstAvailability(t *testing.T) {
 	t.Run("when a hold is already active then it reduces what a later one can take", func(t *testing.T) {
 		accounts := []entity.Account{entity.NewAccount("A", entity.AED, "0.00")}
-		svc := ledger.New(config.Default(), accounts...)
-		assert.NoError(t, svc.Replay([]entity.Event{
+		svc := newService(config.FeeReversalNone, accounts...)
+		assert.NoError(t, svc.Replay(context.Background(), []entity.Event{
 			{ID: "C", Type: entity.EventCredit, PostingDay: 1, ValueDate: 1, AccountID: "A", Amount: aed("100.00")},
 			{ID: "H1", Type: entity.EventAuthorization, PostingDay: 1, ValueDate: 1, AccountID: "A", Amount: aed("60.00"), AuthID: "first"},
 			{ID: "H2", Type: entity.EventAuthorization, PostingDay: 1, ValueDate: 1, AccountID: "A", Amount: aed("60.00"), AuthID: "second"},
 		}))
 
-		first, _ := auth(svc, "first")
-		second, _ := auth(svc, "second")
+		first, _ := auth(t, svc, "first")
+		second, _ := auth(t, svc, "second")
 		assert.Equal(t, entity.AuthApproved, first.State)
 		assert.Equal(t, entity.AuthDeclined, second.State,
 			"100.00 - 60.00 - 60.00 is negative, so the second hold cannot stand")

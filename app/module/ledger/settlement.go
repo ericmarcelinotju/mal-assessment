@@ -1,6 +1,8 @@
 package ledger
 
 import (
+	"context"
+
 	"github.com/ericmarcelinotju/mal-assessment/app/entity"
 	"github.com/ericmarcelinotju/mal-assessment/apperror"
 )
@@ -12,7 +14,7 @@ import (
 // card-network "force post", where an unmatched settlement is booked and
 // flagged for investigation -- is a real practice, and AMBIGUITIES.md argues it
 // properly and gives the full numeric effect of choosing it. It is not what
-// this engine does: an in-memory core with no upstream network to reconcile
+// this service does: an in-memory core with no upstream network to reconcile
 // against has no basis on which to fabricate a debit, and rejecting is the
 // recoverable choice of the two. A rejected settlement can be re-presented once
 // its authorization arrives; a wrongly booked debit has already left.
@@ -21,22 +23,24 @@ import (
 // reserved when the authorization was approved, and reneging on a promise
 // already made to a merchant is not a decision the ledger gets to take at
 // settlement time.
-func (s *service) settle(acc entity.Account, ev entity.Event) ([]entity.LedgerEntry, error) {
+func (s *service) settle(
+	ctx context.Context, acc entity.Account, ev entity.Event,
+) ([]entity.LedgerEntry, error) {
 	auth, ok := s.auths[ev.AuthID]
 	if !ok {
-		return nil, s.reject(ev, apperror.ErrOrphanSettlement,
+		return nil, s.reject(ctx, ev, apperror.ErrOrphanSettlement,
 			"settlement for "+ev.AuthID+" has no preceding authorization; rejected, no funds moved")
 	}
 	if auth.AccountID != acc.ID {
-		return nil, s.reject(ev, apperror.ErrInvalidParameter,
+		return nil, s.reject(ctx, ev, apperror.ErrInvalidParameter,
 			"authorization "+ev.AuthID+" belongs to "+auth.AccountID)
 	}
 	if auth.State != entity.AuthApproved {
-		return nil, s.reject(ev, apperror.ErrAuthNotActive,
+		return nil, s.reject(ctx, ev, apperror.ErrAuthNotActive,
 			"authorization "+ev.AuthID+" is "+string(auth.State)+", cannot settle")
 	}
 
-	entries, err := s.postAmount(acc, ev, ev.Amount.Neg(), entity.OriginSettlement)
+	entries, err := s.postAmount(ctx, acc, ev, ev.Amount.Neg(), entity.OriginSettlement)
 	if err != nil {
 		return nil, err
 	}
@@ -59,27 +63,34 @@ func (s *service) settle(acc entity.Account, ev entity.Event) ([]entity.LedgerEn
 // restores the balance of every affected day, whereas reversing at today's date
 // would leave the historical days permanently wrong while making today's total
 // look right.
-func (s *service) reverse(acc entity.Account, ev entity.Event) ([]entity.LedgerEntry, error) {
+func (s *service) reverse(
+	ctx context.Context, acc entity.Account, ev entity.Event,
+) ([]entity.LedgerEntry, error) {
+	all, err := s.Entries(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	var targets []entity.LedgerEntry
-	for _, e := range s.log.entries {
+	for _, e := range all {
 		if e.EventID == ev.ReversesEventID && e.AccountID == acc.ID {
 			targets = append(targets, e)
 		}
 	}
 	if len(targets) == 0 {
-		return nil, s.reject(ev, apperror.ErrUnknownEventRef,
+		return nil, s.reject(ctx, ev, apperror.ErrUnknownEventRef,
 			"reversal references "+string(ev.ReversesEventID)+", which has no entries on "+acc.ID)
 	}
-	for _, e := range s.log.entries {
+	for _, e := range all {
 		if e.Origin == entity.OriginReversal && e.ReversesSeq == targets[0].Seq {
-			return nil, s.reject(ev, apperror.ErrAlreadyReversed,
+			return nil, s.reject(ctx, ev, apperror.ErrAlreadyReversed,
 				string(ev.ReversesEventID)+" is already reversed")
 		}
 	}
 
 	out := make([]entity.LedgerEntry, 0, len(targets))
 	for _, t := range targets {
-		out = append(out, s.log.append(entity.LedgerEntry{
+		entry, err := s.appendEntry(ctx, entity.LedgerEntry{
 			EventID:     ev.ID,
 			AccountID:   acc.ID,
 			PostingDay:  ev.PostingDay,
@@ -88,7 +99,11 @@ func (s *service) reverse(acc entity.Account, ev entity.Event) ([]entity.LedgerE
 			Origin:      entity.OriginReversal,
 			Memo:        "reversal of " + string(t.EventID),
 			ReversesSeq: t.Seq,
-		}))
+		})
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, entry)
 	}
 	return out, nil
 }

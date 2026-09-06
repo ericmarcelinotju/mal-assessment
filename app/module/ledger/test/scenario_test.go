@@ -31,12 +31,12 @@ func TestScenario_DefaultPolicy(t *testing.T) {
 	})
 
 	t.Run("ACC-001 fees", func(t *testing.T) {
-		assessed, reversed := countFees(svc, ledger.ACC001)
+		assessed, reversed := countFees(t, svc, ledger.ACC001)
 		assert.Equal(t, 3, assessed)
 		assert.Equal(t, 0, reversed)
 
 		total := entity.Zero(entity.AED)
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			if e.AccountID == ledger.ACC001 && e.IsFee() {
 				total = total.Add(e.Amount)
 			}
@@ -74,17 +74,17 @@ func TestScenario_DefaultPolicy(t *testing.T) {
 			assertMoney(t, bhd(amount), row(t, svc, ledger.ACC002, day).ClosingBalance, "day %d", day)
 		}
 
-		assessed, _ := countFees(svc, ledger.ACC002)
+		assessed, _ := countFees(t, svc, ledger.ACC002)
 		assert.Equal(t, 0, assessed, "ACC-002 is never negative")
 	})
 
 	t.Run("errors", func(t *testing.T) {
 		// Exactly two instructions are refused, and both are refusals the brief
 		// engineered: an orphan settlement and an unfundable authorization.
-		assert.Len(t, svc.Errors(), 2)
+		assert.Len(t, ledgerErrors(t, svc), 2)
 
 		codes := map[string]bool{}
-		for _, e := range svc.Errors() {
+		for _, e := range ledgerErrors(t, svc) {
 			codes[e.Code] = true
 		}
 		assert.True(t, codes["2002"], "E6: orphan settlement")
@@ -115,7 +115,7 @@ func TestScenario_FeeReversalPolicy(t *testing.T) {
 
 	t.Run("fees net to zero", func(t *testing.T) {
 		total := entity.Zero(entity.AED)
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			if e.AccountID == ledger.ACC001 && (e.IsFee() || e.IsFeeReversal()) {
 				total = total.Add(e.Amount)
 			}

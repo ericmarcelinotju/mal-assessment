@@ -1,6 +1,7 @@
 package ledger_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,7 +17,7 @@ func TestSettlement_AuthAIsAccepted(t *testing.T) {
 		svc := replay(t, config.FeeReversalNone)
 
 		var found bool
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			if e.EventID == "E5" {
 				found = true
 				assertMoney(t, aed("-185.00"), e.Amount, "")
@@ -34,7 +35,7 @@ func TestSettlement_AuthAIsAccepted(t *testing.T) {
 		// release.
 		svc := replay(t, config.FeeReversalNone)
 
-		a, ok := auth(svc, "Auth-A")
+		a, ok := auth(t, svc, "Auth-A")
 		assert.True(t, ok)
 		assert.Equal(t, entity.AuthSettled, a.State)
 		assertMoney(t, aed("185.00"), a.SettledAmount, "")
@@ -47,8 +48,8 @@ func TestSettlement_AuthAIsAccepted(t *testing.T) {
 		// reserved at authorization, and a promise already made to a merchant is
 		// not something the ledger may renege on at settlement time.
 		accounts := []entity.Account{entity.NewAccount("A", entity.AED, "0.00")}
-		svc := ledger.New(config.Default(), accounts...)
-		assert.NoError(t, svc.Replay([]entity.Event{
+		svc := newService(config.FeeReversalNone, accounts...)
+		assert.NoError(t, svc.Replay(context.Background(), []entity.Event{
 			{ID: "C", Type: entity.EventCredit, PostingDay: 1, ValueDate: 1, AccountID: "A", Amount: aed("100.00")},
 			{ID: "H", Type: entity.EventAuthorization, PostingDay: 1, ValueDate: 1, AccountID: "A", Amount: aed("100.00"), AuthID: "X"},
 			{ID: "D", Type: entity.EventDebit, PostingDay: 2, ValueDate: 2, AccountID: "A", Amount: aed("100.00")},
@@ -56,7 +57,7 @@ func TestSettlement_AuthAIsAccepted(t *testing.T) {
 		}))
 
 		var posted bool
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			if e.EventID == "S" {
 				posted = true
 			}
@@ -70,7 +71,7 @@ func TestSettlement_OrphanIsRejected(t *testing.T) {
 	t.Run("when the authorization is unknown then no funds move", func(t *testing.T) {
 		svc := replay(t, config.FeeReversalNone)
 
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			assert.NotEqual(t, entity.EventID("E6"), e.EventID,
 				"E6 references Auth-Z, which never existed; it must produce no entry")
 		}
@@ -100,21 +101,21 @@ func TestSettlement_OrphanIsRejected(t *testing.T) {
 		// settlement against it has no reserved funds behind it and is refused
 		// on the same grounds as an orphan.
 		accounts := []entity.Account{entity.NewAccount("A", entity.AED, "0.00")}
-		svc := ledger.New(config.Default(), accounts...)
-		assert.NoError(t, svc.Replay([]entity.Event{
+		svc := newService(config.FeeReversalNone, accounts...)
+		assert.NoError(t, svc.Replay(context.Background(), []entity.Event{
 			{ID: "H", Type: entity.EventAuthorization, PostingDay: 1, ValueDate: 1, AccountID: "A", Amount: aed("50.00"), AuthID: "X"},
 			{ID: "S", Type: entity.EventSettlement, PostingDay: 2, ValueDate: 2, AccountID: "A", Amount: aed("50.00"), AuthID: "X"},
 		}))
 
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			assert.NotEqual(t, entity.EventID("S"), e.EventID)
 		}
 	})
 
 	t.Run("when an authorization is settled twice then the second is refused", func(t *testing.T) {
 		accounts := []entity.Account{entity.NewAccount("A", entity.AED, "0.00")}
-		svc := ledger.New(config.Default(), accounts...)
-		assert.NoError(t, svc.Replay([]entity.Event{
+		svc := newService(config.FeeReversalNone, accounts...)
+		assert.NoError(t, svc.Replay(context.Background(), []entity.Event{
 			{ID: "C", Type: entity.EventCredit, PostingDay: 1, ValueDate: 1, AccountID: "A", Amount: aed("100.00")},
 			{ID: "H", Type: entity.EventAuthorization, PostingDay: 1, ValueDate: 1, AccountID: "A", Amount: aed("50.00"), AuthID: "X"},
 			{ID: "S1", Type: entity.EventSettlement, PostingDay: 2, ValueDate: 2, AccountID: "A", Amount: aed("50.00"), AuthID: "X"},
@@ -122,7 +123,7 @@ func TestSettlement_OrphanIsRejected(t *testing.T) {
 		}))
 
 		var s1, s2 bool
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			switch e.EventID {
 			case "S1":
 				s1 = true
@@ -140,7 +141,7 @@ func TestSettlement_ReversalIsAContraEntry(t *testing.T) {
 		svc := replay(t, config.FeeReversalNone)
 
 		var e7, e9 entity.LedgerEntry
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			switch e.EventID {
 			case "E7":
 				e7 = e
@@ -161,7 +162,7 @@ func TestSettlement_ReversalIsAContraEntry(t *testing.T) {
 		// historical day permanently wrong.
 		svc := replay(t, config.FeeReversalNone)
 
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			if e.EventID == "E9" {
 				assert.Equal(t, entity.Day(6), e.PostingDay)
 				assert.Equal(t, entity.Day(2), e.ValueDate)
@@ -171,21 +172,21 @@ func TestSettlement_ReversalIsAContraEntry(t *testing.T) {
 
 	t.Run("when the reversal target is unknown then it is refused", func(t *testing.T) {
 		accounts := []entity.Account{entity.NewAccount("A", entity.AED, "0.00")}
-		svc := ledger.New(config.Default(), accounts...)
-		assert.NoError(t, svc.Replay([]entity.Event{
+		svc := newService(config.FeeReversalNone, accounts...)
+		assert.NoError(t, svc.Replay(context.Background(), []entity.Event{
 			{ID: "R", Type: entity.EventReversal, PostingDay: 1, ValueDate: 1, AccountID: "A", ReversesEventID: "nope"},
 		}))
 
-		assert.Empty(t, svc.Entries())
-		assert.NotEmpty(t, svc.Errors())
+		assert.Empty(t, entries(t, svc))
+		assert.NotEmpty(t, ledgerErrors(t, svc))
 	})
 
 	t.Run("when an instalment credit is reversed then every part is undone", func(t *testing.T) {
 		// E10 posts three entries under one event ID. A reversal has to undo all
 		// of them, or the account keeps a fraction of a credit that was withdrawn.
 		accounts := []entity.Account{entity.NewAccount("B", entity.BHD, "0.000")}
-		svc := ledger.New(config.Default(), accounts...)
-		assert.NoError(t, svc.Replay([]entity.Event{
+		svc := newService(config.FeeReversalNone, accounts...)
+		assert.NoError(t, svc.Replay(context.Background(), []entity.Event{
 			{ID: "C", Type: entity.EventCredit, PostingDay: 1, ValueDate: 1, AccountID: "B", Amount: bhd("10.000"), Instalments: 3},
 			{ID: "R", Type: entity.EventReversal, PostingDay: 2, ValueDate: 1, AccountID: "B", ReversesEventID: "C"},
 		}))

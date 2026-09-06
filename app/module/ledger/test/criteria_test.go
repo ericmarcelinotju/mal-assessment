@@ -1,6 +1,7 @@
 package ledger_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,11 +27,11 @@ func TestCriterion1_Accepted(t *testing.T) {
 		// makes it answerable. Replaying only what was posted up to day 5 and
 		// stopping before the close reproduces exactly that observation point.
 		cfg := config.Default()
-		svc := ledger.New(cfg, ledger.CanonicalAccounts()...)
+		svc := ledger.NewService(cfg, ledger.NewRepository(), ledger.CanonicalAccounts()...)
 
 		for _, ev := range ledger.CanonicalStream() {
 			if ev.PostingDay <= 5 {
-				_, _ = svc.Post(ev)
+				_, _ = svc.Post(context.Background(), ev)
 			}
 		}
 		// Deliberately no CloseDay: "before any fee is assessed".
@@ -57,7 +58,7 @@ func TestCriterion2_Refused(t *testing.T) {
 	t.Run("when the criterion claims one fee then the engine assesses three", func(t *testing.T) {
 		svc := replay(t, config.FeeReversalNone)
 
-		assessed, _ := countFees(svc, ledger.ACC001)
+		assessed, _ := countFees(t, svc, ledger.ACC001)
 		assert.NotEqual(t, 1, assessed, "criterion 2 is false")
 		assert.Equal(t, 3, assessed, "days 2, 4 and 5")
 	})
@@ -68,7 +69,7 @@ func TestCriterion2_Refused(t *testing.T) {
 		// on day 2's information and is never reopened -- so the single fee falls
 		// on day 5, not day 2. Either way the criterion is wrong.
 		cfg := config.Default()
-		svc := ledger.New(cfg, ledger.CanonicalAccounts()...)
+		svc := ledger.NewService(cfg, ledger.NewRepository(), ledger.CanonicalAccounts()...)
 
 		var upToDay2 []entity.Event
 		for _, ev := range ledger.CanonicalStream() {
@@ -76,9 +77,9 @@ func TestCriterion2_Refused(t *testing.T) {
 				upToDay2 = append(upToDay2, ev)
 			}
 		}
-		assert.NoError(t, svc.Replay(upToDay2))
+		assert.NoError(t, svc.Replay(context.Background(), upToDay2))
 
-		assessed, _ := feesOn(svc, ledger.ACC001, 2)
+		assessed, _ := feesOn(t, svc, ledger.ACC001, 2)
 		assert.Equal(t, 0, assessed,
 			"observed from day 2, day 2 closes at +250.00 and owes nothing")
 	})
@@ -90,7 +91,7 @@ func TestCriterion3_Accepted(t *testing.T) {
 		svc := replay(t, config.FeeReversalNone)
 
 		var posted bool
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			if e.EventID == "E5" {
 				posted = true
 				assertMoney(t, aed("-185.00"), e.Amount, "")
@@ -98,7 +99,7 @@ func TestCriterion3_Accepted(t *testing.T) {
 		}
 		assert.True(t, posted)
 
-		a, _ := auth(svc, "Auth-A")
+		a, _ := auth(t, svc, "Auth-A")
 		assert.Equal(t, entity.AuthSettled, a.State)
 	})
 }
@@ -114,7 +115,7 @@ func TestCriterion4_Accepted(t *testing.T) {
 	t.Run("when a settlement has no authorization then no funds leave", func(t *testing.T) {
 		svc := replay(t, config.FeeReversalNone)
 
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			assert.NotEqual(t, entity.EventID("E6"), e.EventID)
 		}
 		assertMoney(t, aed("415.00"), row(t, svc, ledger.ACC001, 4).ClosingBalance,
@@ -134,7 +135,7 @@ func TestCriterion5_VacuouslyTrue(t *testing.T) {
 	t.Run("when the premise is checked then Auth-B is declined", func(t *testing.T) {
 		svc := replay(t, config.FeeReversalNone)
 
-		a, ok := auth(svc, "Auth-B")
+		a, ok := auth(t, svc, "Auth-B")
 		assert.True(t, ok)
 		assert.Equal(t, entity.AuthDeclined, a.State, "the antecedent is false")
 	})
@@ -165,7 +166,7 @@ func TestCriterion6_RefusedUnderDefaultPolicy(t *testing.T) {
 		assertMoney(t, aed("390.93"), row(t, svc, ledger.ACC001, 6).ClosingBalance,
 			"the pre-E7 path would have closed at 466.03")
 
-		assessed, reversed := countFees(svc, ledger.ACC001)
+		assessed, reversed := countFees(t, svc, ledger.ACC001)
 		assert.Equal(t, 3, assessed, "and the fees certainly do not return")
 		assert.Equal(t, 0, reversed)
 	})
@@ -181,8 +182,8 @@ func TestCriterion6_RefusedUnderDefaultPolicy(t *testing.T) {
 				withoutE7 = append(withoutE7, ev)
 			}
 		}
-		counterfactual := ledger.New(config.Default(), ledger.CanonicalAccounts()...)
-		assert.NoError(t, counterfactual.Replay(withoutE7))
+		counterfactual := newService(config.FeeReversalNone, ledger.CanonicalAccounts()...)
+		assert.NoError(t, counterfactual.Replay(context.Background(), withoutE7))
 
 		for day := entity.Day(1); day <= 6; day++ {
 			assertMoney(t,
@@ -192,7 +193,7 @@ func TestCriterion6_RefusedUnderDefaultPolicy(t *testing.T) {
 		}
 
 		net := entity.Zero(entity.AED)
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			if e.AccountID == ledger.ACC001 && (e.IsFee() || e.IsFeeReversal()) {
 				net = net.Add(e.Amount)
 			}
@@ -212,7 +213,7 @@ func TestCriterion7_Refused(t *testing.T) {
 		svc := replay(t, config.FeeReversalNone)
 
 		var parts []entity.Money
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			if e.EventID == "E10" {
 				parts = append(parts, e.Amount)
 			}

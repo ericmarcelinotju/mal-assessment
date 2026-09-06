@@ -4,6 +4,7 @@ type ErrorCode string
 
 const (
 	// 1xxx: general request errors
+	ErrUnexpected       ErrorCode = "0000"
 	ErrInvalidParameter ErrorCode = "1000"
 
 	// 2xxx: validation errors, specific to this service

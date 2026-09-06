@@ -1,6 +1,7 @@
 package ledger_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -94,8 +95,8 @@ func TestKnownGap_OverdraftFeesSurviveReversalOfTheirCause(t *testing.T) {
 			withoutE7 = append(withoutE7, ev)
 		}
 	}
-	counterfactual := ledger.New(config.Default(), ledger.CanonicalAccounts()...)
-	assert.NoError(t, counterfactual.Replay(withoutE7))
+	counterfactual := newService(config.FeeReversalNone, ledger.CanonicalAccounts()...)
+	assert.NoError(t, counterfactual.Replay(context.Background(), withoutE7))
 
 	want := row(t, counterfactual, ledger.ACC001, 6).ClosingBalance // 466.03
 	got := row(t, svc, ledger.ACC001, 6).ClosingBalance             // 390.93
@@ -111,7 +112,7 @@ func TestKnownGap_OverdraftFeesSurviveReversalOfTheirCause(t *testing.T) {
 
 	// The same failure stated as the fee count, so the diff is legible without
 	// working backwards from a balance.
-	assessed, reversed := countFees(svc, ledger.ACC001)
+	assessed, reversed := countFees(t, svc, ledger.ACC001)
 	assert.Equal(t, assessed, reversed,
 		"every fee whose cause was reversed should itself have been reversed; "+
 			"the default rule set has no primitive for that")

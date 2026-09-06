@@ -1,6 +1,7 @@
 package ledger_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,7 +18,7 @@ func TestAppendOnly_LogIsMonotonic(t *testing.T) {
 		svc := replay(t, config.FeeReversalNone)
 
 		last := 0
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			assert.Greater(t, e.Seq, last, "the log is in append order with no reuse")
 			last = e.Seq
 		}
@@ -25,17 +26,17 @@ func TestAppendOnly_LogIsMonotonic(t *testing.T) {
 
 	t.Run("when the log is read twice then it only grows", func(t *testing.T) {
 		cfg := config.Default()
-		svc := ledger.New(cfg, ledger.CanonicalAccounts()...)
+		svc := ledger.NewService(cfg, ledger.NewRepository(), ledger.CanonicalAccounts()...)
 
 		var lengths []int
 		for day := entity.Day(1); day <= 6; day++ {
 			for _, ev := range ledger.CanonicalStream() {
 				if ev.PostingDay == day {
-					_, _ = svc.Post(ev)
+					_, _ = svc.Post(context.Background(), ev)
 				}
 			}
-			assert.NoError(t, svc.CloseDay(day))
-			lengths = append(lengths, len(svc.Entries()))
+			assert.NoError(t, svc.CloseDay(context.Background(), day))
+			lengths = append(lengths, len(entries(t, svc)))
 		}
 		for i := 1; i < len(lengths); i++ {
 			assert.GreaterOrEqual(t, lengths[i], lengths[i-1],
@@ -52,7 +53,7 @@ func TestAppendOnly_CallerCannotRewriteHistory(t *testing.T) {
 	t.Run("when a caller mutates the returned slice then the ledger is unaffected", func(t *testing.T) {
 		svc := replay(t, config.FeeReversalNone)
 
-		stolen := svc.Entries()
+		stolen := entries(t, svc)
 		before := row(t, svc, ledger.ACC001, 6).ClosingBalance
 
 		for i := range stolen {
@@ -66,7 +67,7 @@ func TestAppendOnly_CallerCannotRewriteHistory(t *testing.T) {
 	t.Run("when accruals are read then they are a copy too", func(t *testing.T) {
 		svc := replay(t, config.FeeReversalNone)
 
-		stolen := svc.Accruals()
+		stolen := accruals(t, svc)
 		before := row(t, svc, ledger.ACC001, 2).InterestAccrued
 		for i := range stolen {
 			stolen[i].Amount = aed("42.00")
@@ -83,7 +84,7 @@ func TestAppendOnly_CorrectionsAreContraEntries(t *testing.T) {
 		svc := replay(t, config.FeeReversalNone)
 
 		var found bool
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			if e.EventID == "E7" {
 				found = true
 				assertMoney(t, aed("-620.00"), e.Amount, "the original is unchanged")
@@ -95,7 +96,7 @@ func TestAppendOnly_CorrectionsAreContraEntries(t *testing.T) {
 	t.Run("when fees are reversed then the fees are still in the log", func(t *testing.T) {
 		svc := replay(t, config.FeeReversalOnCauseReversal)
 
-		assessed, reversed := countFees(svc, ledger.ACC001)
+		assessed, reversed := countFees(t, svc, ledger.ACC001)
 		assert.Equal(t, 3, assessed, "the fee entries survive their own reversal")
 		assert.Equal(t, 3, reversed)
 	})
@@ -115,8 +116,8 @@ func TestAppendOnly_CorrectionsAreContraEntries(t *testing.T) {
 // leaking into the result.
 func TestAppendOnly_ReplayIsDeterministic(t *testing.T) {
 	t.Run("when the same stream is replayed twice then the logs are identical", func(t *testing.T) {
-		first := replay(t, config.FeeReversalNone).Entries()
-		second := replay(t, config.FeeReversalNone).Entries()
+		first := entries(t, replay(t, config.FeeReversalNone))
+		second := entries(t, replay(t, config.FeeReversalNone))
 
 		assert.Equal(t, len(first), len(second))
 		for i := range first {
@@ -140,7 +141,7 @@ func TestAppendOnly_PostingOrderBeatsListedOrder(t *testing.T) {
 		svc := replay(t, config.FeeReversalNone)
 
 		var e9, e10 int
-		for _, e := range svc.Entries() {
+		for _, e := range entries(t, svc) {
 			switch e.EventID {
 			case "E9":
 				e9 = e.Seq
@@ -161,8 +162,8 @@ func TestAppendOnly_PostingOrderBeatsListedOrder(t *testing.T) {
 		for i := len(stream) - 1; i >= 0; i-- {
 			reversed = append(reversed, stream[i])
 		}
-		shuffled := ledger.New(config.Default(), ledger.CanonicalAccounts()...)
-		assert.NoError(t, shuffled.Replay(reversed))
+		shuffled := newService(config.FeeReversalNone, ledger.CanonicalAccounts()...)
+		assert.NoError(t, shuffled.Replay(context.Background(), reversed))
 
 		// Same-day ordering still comes from the listing, so a fully reversed
 		// stream is not guaranteed to be identical -- but the closing position

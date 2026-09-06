@@ -1,6 +1,8 @@
 package ledger
 
 import (
+	"context"
+
 	"github.com/ericmarcelinotju/mal-assessment/app/entity"
 )
 
@@ -28,9 +30,14 @@ import (
 // back-value entries lie -- is simpler and defensible, and produces AED 0.71
 // instead of 0.93 on this stream. It is rejected because it leaves the accrual
 // subledger describing balances the ledger no longer holds. See AMBIGUITIES.md.
-func (s *service) accrueInterest(acc entity.Account, processingDay entity.Day) error {
+func (s *service) accrueInterest(
+	ctx context.Context, acc entity.Account, processingDay entity.Day,
+) error {
 	for day := entity.Day(1); day <= processingDay; day++ {
-		balance := s.closingBalance(acc, day)
+		balance, err := s.closingBalance(ctx, acc, day)
+		if err != nil {
+			return err
+		}
 
 		// Positive balances only. A negative balance accrues nothing; it is
 		// priced by the overdraft fee instead, and charging both would be
@@ -40,35 +47,45 @@ func (s *service) accrueInterest(acc entity.Account, processingDay entity.Day) e
 			target = balance.MulRatioHalfUp(s.cfg.InterestRateNum, s.cfg.InterestRateDen)
 		}
 
-		booked := s.netAccrual(acc.ID, day)
+		booked, err := s.netAccrual(ctx, acc, day)
+		if err != nil {
+			return err
+		}
 		delta := target.Sub(booked)
 		if delta.IsZero() {
 			continue
 		}
 
-		s.log.appendAccrual(entity.Accrual{
+		if err := s.appendAccrual(ctx, entity.Accrual{
 			AccountID:    acc.ID,
 			Day:          day,
 			BookedOnDay:  processingDay,
 			Amount:       delta,
 			Basis:        balance,
 			IsAdjustment: !booked.IsZero() || day != processingDay,
-		})
+		}); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 // netAccrual is the accrual currently standing for one account-day: the sum of
 // its records, original plus every adjustment.
-func (s *service) netAccrual(accountID string, day entity.Day) entity.Money {
-	acc := s.accounts[accountID]
+func (s *service) netAccrual(
+	ctx context.Context, acc entity.Account, day entity.Day,
+) (entity.Money, error) {
+	accruals, err := s.Accruals(ctx)
+	if err != nil {
+		return entity.Money{}, err
+	}
 	total := entity.Zero(acc.Currency)
-	for _, a := range s.log.accruals {
-		if a.AccountID == accountID && a.Day == day {
+	for _, a := range accruals {
+		if a.AccountID == acc.ID && a.Day == day {
 			total = total.Add(a.Amount)
 		}
 	}
-	return total
+	return total, nil
 }
 
 // capitalise books the accrued interest as a single credit.
@@ -90,9 +107,14 @@ func (s *service) netAccrual(accountID string, day entity.Day) entity.Money {
 // The opposite arrangement -- treat the exact total as primitive and use
 // largest-remainder to force the dailies to sum to it -- also satisfies the rule
 // and yields 0.92. See AMBIGUITIES.md for why the daily is the primitive.
-func (s *service) capitalise(acc entity.Account, day entity.Day) error {
+func (s *service) capitalise(ctx context.Context, acc entity.Account, day entity.Day) error {
+	accruals, err := s.Accruals(ctx)
+	if err != nil {
+		return err
+	}
+
 	total := entity.Zero(acc.Currency)
-	for _, a := range s.log.accruals {
+	for _, a := range accruals {
 		if a.AccountID == acc.ID {
 			total = total.Add(a.Amount)
 		}
@@ -101,7 +123,7 @@ func (s *service) capitalise(acc entity.Account, day entity.Day) error {
 		return nil
 	}
 
-	s.log.append(entity.LedgerEntry{
+	_, err = s.appendEntry(ctx, entity.LedgerEntry{
 		EventID:    entity.EventID("INT"),
 		AccountID:  acc.ID,
 		PostingDay: day,
@@ -110,5 +132,5 @@ func (s *service) capitalise(acc entity.Account, day entity.Day) error {
 		Origin:     entity.OriginCapitalisation,
 		Memo:       "interest capitalisation, sum of daily accruals",
 	})
-	return nil
+	return err
 }
