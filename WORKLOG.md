@@ -158,7 +158,7 @@ in `git log`, which is the check on them.
   including the gitignored `config/default/*.yml`) before deletion, since it was
   never under version control.
 
-- **23:14** Refactored the module onto the boilerplate's foldering convention,
+- **23:11** Refactored the module onto the boilerplate's foldering convention,
   which I had not followed. It now has `repository.go` / `service.go` /
   `controller.go` / `route.go`, interfaces with unexported structs behind `New*`
   constructors, `context.Context` first on every method, generated mocks in
