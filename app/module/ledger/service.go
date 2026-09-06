@@ -28,9 +28,6 @@ type Service interface {
 	Entries() []entity.LedgerEntry
 	Accruals() []entity.Accrual
 	Errors() []entity.LedgerError
-	// Config returns the active configuration, so the report header can state
-	// which fee-reversal policy produced the numbers.
-	Config() config.Config
 }
 
 type service struct {
@@ -69,7 +66,6 @@ func New(cfg config.Config, accounts ...entity.Account) Service {
 	return s
 }
 
-func (s *service) Config() config.Config         { return s.cfg }
 func (s *service) Entries() []entity.LedgerEntry { return s.log.Entries() }
 func (s *service) Accruals() []entity.Accrual    { return s.log.Accruals() }
 func (s *service) Errors() []entity.LedgerError  { return s.log.Errors() }

@@ -130,3 +130,22 @@ in `git log`, which is the check on them.
 
   Same replay, same three fees, same 390.93 and 466.03, same single expected
   test failure.
+
+- **23:04** Second cleanup pass, this time asking of every symbol not "is it
+  used" but "does it serve the ledger question". Removed `AppError.Is` and
+  `AppError.Unwrap` — nothing in the ledger inspects an error programmatically,
+  because rejections are recorded on the log as data and reported under their own
+  day, so the only consumer of an error value is a person reading the report.
+  Implementing the `errors.Is` contract for a caller that does not exist is
+  scaffolding. Removed `Service.Config()`, never called: `main` already holds the
+  config and hands it to the presenter directly.
+
+  Also cut the Makefile down to the four targets that run the deliverable
+  (`run`, `run-reversal`, `test`, `verify`), dropping the generic `fmt`, `vet`,
+  `lint` and `test-coverage` chores, and reduced `.gitignore` from inherited
+  boilerplate — Windows DLLs, `.vscode`, `.idea`, `tmp/` — to the two patterns a
+  pure Go project with no build artifacts actually produces.
+
+  Left `Workspace/mal`, the original boilerplate, untouched: it is a separate
+  unversioned directory holding no interview code, and deleting from it would
+  have been irreversible.

@@ -5,10 +5,13 @@ no database — the engine is a pure function of the event stream, so the six-da
 replay is deterministic and every figure below is reproducible.
 
 Built on the supplied Go boilerplate: same layout (`app/entity`,
-`app/module/<name>/test`), same idioms (interface + unexported struct + `New`,
-coded errors, `log/slog`), with gin, MongoDB, viper and a privately hosted
-internal library removed. A public repository has to build for anyone who clones
-it, and the brief forbids the layers those dependencies serve.
+`app/module/<name>/test`) and same idioms (interface + unexported struct +
+`New`, coded errors). Everything the ledger does not use is gone — gin, MongoDB,
+viper, the plugin system, the REST and infra layers, a privately hosted internal
+library, and the boilerplate's own logger and mock tooling. A public repository
+has to build for whoever clones it, the brief forbids the layers those
+dependencies serve, and scaffolding nothing calls only invites the reader to
+wonder what it was for.
 
 ---
 
@@ -61,8 +64,7 @@ go test ./... -count=1 -skip 'TestKnownGap_'
 ```
 
 Equivalent `make` targets exist — `make run`, `make run-reversal`, `make test`,
-`make verify`, `make test-coverage` — but the `go` commands above are the
-primary, verified path.
+`make verify` — but the `go` commands above are the primary, verified path.
 
 ---
 

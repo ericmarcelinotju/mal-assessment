@@ -1,18 +1,3 @@
-# Binaries
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-
-# Test coverage reports
-coverage*
-cover*
-.out
-report/*
-.DS_Store
-
-tmp/
-.vscode
-.idea
-
+# Go test and coverage output
+*.out
+*.test
