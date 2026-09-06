@@ -17,7 +17,17 @@ import (
 	"github.com/ericmarcelinotju/mal-assessment/config"
 )
 
+// Sentinel errors returned by the repository.
+var (
+	ErrNotFound      = apperror.New(apperror.ErrUnknownEventRef, "fee assessment not found")
+	ErrAlreadyExists = apperror.New(apperror.ErrInvalidParameter, "fee assessment already exists")
+)
+
 type Service interface {
+	Create(context.Context, entity.FeeAssessment) (entity.FeeAssessment, error)
+	Read(context.Context, entity.FeeAssessmentFilter) ([]entity.FeeAssessment, error)
+	Delete(context.Context, string) error
+
 	// Assess charges any day up to the processing day whose closing balance is
 	// negative and which has not been charged before.
 	Assess(context.Context, entity.Account, entity.Day) error
@@ -36,6 +46,34 @@ func NewService(cfg config.Config, repo Repository, ledgerSvc ledger.Service) Se
 	return &service{cfg: cfg, repo: repo, ledger: ledgerSvc}
 }
 
+func (s *service) Create(
+	ctx context.Context, payload entity.FeeAssessment,
+) (entity.FeeAssessment, error) {
+	res, err := s.repo.Create(ctx, payload)
+	if err != nil {
+		return entity.FeeAssessment{}, apperror.New(apperror.ErrUnexpected,
+			"create fee assessment error", err)
+	}
+	return res, nil
+}
+
+func (s *service) Read(
+	ctx context.Context, filter entity.FeeAssessmentFilter,
+) ([]entity.FeeAssessment, error) {
+	res, err := s.repo.Read(ctx, filter)
+	if err != nil {
+		return nil, apperror.New(apperror.ErrUnexpected, "read fee assessment error", err)
+	}
+	return res, nil
+}
+
+func (s *service) Delete(ctx context.Context, id string) error {
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return apperror.New(apperror.ErrUnexpected, "delete fee assessment error", err)
+	}
+	return nil
+}
+
 // amount returns the overdraft fee denominated in the account's own currency.
 //
 // The brief states the fee as "AED 25.00" while ACC-002 is a BHD account. An
@@ -49,13 +87,6 @@ func (s *service) amount(acc entity.Account) entity.Money {
 		decimal.NewFromInt(s.cfg.OverdraftFeeMinor).Div(decimal.NewFromInt(100)),
 		acc.Currency,
 	)
-}
-
-func (s *service) markAssessed(ctx context.Context, accountID string, day entity.Day) error {
-	if err := s.repo.MarkAssessed(ctx, accountID, day); err != nil {
-		return apperror.New(apperror.ErrUnexpected, "mark fee assessed error", err)
-	}
-	return nil
 }
 
 // Assess sweeps every day of the window up to and including the processing day,
@@ -87,11 +118,11 @@ func (s *service) Assess(ctx context.Context, acc entity.Account, processingDay 
 	amount := s.amount(acc)
 
 	for day := entity.Day(1); day <= processingDay; day++ {
-		charged, err := s.repo.IsAssessed(ctx, acc.ID, day)
+		charged, err := s.Read(ctx, entity.FeeAssessmentFilter{AccountID: acc.ID, Day: day})
 		if err != nil {
-			return apperror.New(apperror.ErrUnexpected, "read fee assessment error", err)
+			return err
 		}
-		if charged {
+		if len(charged) > 0 {
 			continue
 		}
 
@@ -103,7 +134,7 @@ func (s *service) Assess(ctx context.Context, acc entity.Account, processingDay 
 			continue
 		}
 
-		if _, err := s.ledger.Append(ctx, entity.LedgerEntry{
+		if _, err := s.ledger.Create(ctx, entity.LedgerEntry{
 			EventID:    entity.EventID("FEE-D" + strconv.Itoa(int(day))),
 			AccountID:  acc.ID,
 			PostingDay: processingDay,
@@ -114,7 +145,7 @@ func (s *service) Assess(ctx context.Context, acc entity.Account, processingDay 
 		}); err != nil {
 			return err
 		}
-		if err := s.markAssessed(ctx, acc.ID, day); err != nil {
+		if _, err := s.Create(ctx, entity.FeeAssessment{AccountID: acc.ID, Day: day}); err != nil {
 			return err
 		}
 	}
@@ -159,7 +190,7 @@ func (s *service) ReverseOnCauseReversal(
 				"fee reversal sweep did not converge for "+acc.ID)
 		}
 
-		entries, err := s.ledger.Entries(ctx)
+		entries, err := s.ledger.Read(ctx, entity.LedgerEntryFilter{AccountID: acc.ID})
 		if err != nil {
 			return err
 		}
@@ -172,7 +203,7 @@ func (s *service) ReverseOnCauseReversal(
 
 		progressed := false
 		for _, charge := range entries {
-			if charge.AccountID != acc.ID || !charge.IsFee() || reversed[charge.Seq] {
+			if !charge.IsFee() || reversed[charge.Seq] {
 				continue
 			}
 			without, err := s.ledger.ClosingBalanceExcluding(ctx, acc, charge.ValueDate, charge.Seq)
@@ -182,7 +213,7 @@ func (s *service) ReverseOnCauseReversal(
 			if without.IsNegative() {
 				continue
 			}
-			if _, err := s.ledger.Append(ctx, entity.LedgerEntry{
+			if _, err := s.ledger.Create(ctx, entity.LedgerEntry{
 				EventID:     charge.EventID,
 				AccountID:   acc.ID,
 				PostingDay:  processingDay,
@@ -194,8 +225,9 @@ func (s *service) ReverseOnCauseReversal(
 			}); err != nil {
 				return err
 			}
-			if err := s.repo.Clear(ctx, acc.ID, charge.ValueDate); err != nil {
-				return apperror.New(apperror.ErrUnexpected, "clear fee assessment error", err)
+			assessment := entity.FeeAssessment{AccountID: acc.ID, Day: charge.ValueDate}
+			if err := s.Delete(ctx, assessment.ID()); err != nil {
+				return err
 			}
 			progressed = true
 		}

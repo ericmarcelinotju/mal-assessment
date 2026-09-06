@@ -230,3 +230,39 @@ in `git log`, which is the check on them.
   real work was regrouping imports afterwards — merging flattened stdlib and
   third-party into one alphabetical block, which reads wrong in Go and is not
   something gofmt puts back.
+
+## 2026-09-07
+
+- **00:01** Standardized every repository and service onto the boilerplate's
+  CRUD vocabulary: `Create`, `Read`, `Update`, `Delete`, with `Read` taking an
+  `entity.XFilter` as the user module does. The ad-hoc names each module had
+  grown — `Save`/`Get`/`All`, `AppendEntry`/`Entries`, `MarkAssessed`/
+  `IsAssessed`/`Clear`, `Load`/`Events` — are gone.
+
+  Pushing the filter into `Read` was the part that paid. "Every entry with
+  value_date <= that day" is the brief's own definition of a closing balance,
+  and it is now expressed once, in the journal's query, instead of in a loop
+  each caller wrote for itself.
+
+  Two verbs are deliberately missing. The journal, the accrual subledger, the
+  rejection log and the event stream are append-only, so they have `Create` and
+  `Read` and nothing else — adding `Update` or `Delete` there would contradict
+  the property the whole exercise rests on. `ledger/test` now asserts that
+  absence at compile time: a `Service` value must fail a type assertion against
+  an interface carrying `Update` and `Delete`, so adding them later breaks the
+  build rather than passing quietly.
+
+  The two full-CRUD modules earn their verbs. An authorization really does move
+  from APPROVED to SETTLED, which had been hidden inside a `Save` that meant
+  both create and update; splitting it made the state transition explicit.
+  `fee.Delete` is the criterion-6 policy in one method — it is what makes a day
+  chargeable again once its fee is reversed.
+
+  Rejections moved out of the ledger module into their own `rejection/` module.
+  They were the reason the journal repository had four methods with two naming
+  schemes; separating them leaves the journal as clean CRUD over postings, and
+  makes "no funds left the account" a stored fact rather than the absence of a
+  row elsewhere.
+
+  Every figure is unchanged: three fees, 390.93, 466.03, 10.008, one expected
+  failure.

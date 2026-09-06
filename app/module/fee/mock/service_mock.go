@@ -101,6 +101,197 @@ func (_c *MockService_Assess_Call) RunAndReturn(run func(context1 context.Contex
 	return _c
 }
 
+// Create provides a mock function for the type MockService
+func (_mock *MockService) Create(context1 context.Context, feeAssessment entity.FeeAssessment) (entity.FeeAssessment, error) {
+	ret := _mock.Called(context1, feeAssessment)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Create")
+	}
+
+	var r0 entity.FeeAssessment
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.FeeAssessment) (entity.FeeAssessment, error)); ok {
+		return returnFunc(context1, feeAssessment)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.FeeAssessment) entity.FeeAssessment); ok {
+		r0 = returnFunc(context1, feeAssessment)
+	} else {
+		r0 = ret.Get(0).(entity.FeeAssessment)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.FeeAssessment) error); ok {
+		r1 = returnFunc(context1, feeAssessment)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockService_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockService_Create_Call struct {
+	*mock.Call
+}
+
+// Create is a helper method to define mock.On call
+//   - context1 context.Context
+//   - feeAssessment entity.FeeAssessment
+func (_e *MockService_Expecter) Create(context1 interface{}, feeAssessment interface{}) *MockService_Create_Call {
+	return &MockService_Create_Call{Call: _e.mock.On("Create", context1, feeAssessment)}
+}
+
+func (_c *MockService_Create_Call) Run(run func(context1 context.Context, feeAssessment entity.FeeAssessment)) *MockService_Create_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 entity.FeeAssessment
+		if args[1] != nil {
+			arg1 = args[1].(entity.FeeAssessment)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockService_Create_Call) Return(feeAssessment1 entity.FeeAssessment, err error) *MockService_Create_Call {
+	_c.Call.Return(feeAssessment1, err)
+	return _c
+}
+
+func (_c *MockService_Create_Call) RunAndReturn(run func(context1 context.Context, feeAssessment entity.FeeAssessment) (entity.FeeAssessment, error)) *MockService_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Delete provides a mock function for the type MockService
+func (_mock *MockService) Delete(context1 context.Context, s string) error {
+	ret := _mock.Called(context1, s)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Delete")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(context1, s)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockService_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type MockService_Delete_Call struct {
+	*mock.Call
+}
+
+// Delete is a helper method to define mock.On call
+//   - context1 context.Context
+//   - s string
+func (_e *MockService_Expecter) Delete(context1 interface{}, s interface{}) *MockService_Delete_Call {
+	return &MockService_Delete_Call{Call: _e.mock.On("Delete", context1, s)}
+}
+
+func (_c *MockService_Delete_Call) Run(run func(context1 context.Context, s string)) *MockService_Delete_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockService_Delete_Call) Return(err error) *MockService_Delete_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockService_Delete_Call) RunAndReturn(run func(context1 context.Context, s string) error) *MockService_Delete_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Read provides a mock function for the type MockService
+func (_mock *MockService) Read(context1 context.Context, feeAssessmentFilter entity.FeeAssessmentFilter) ([]entity.FeeAssessment, error) {
+	ret := _mock.Called(context1, feeAssessmentFilter)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Read")
+	}
+
+	var r0 []entity.FeeAssessment
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.FeeAssessmentFilter) ([]entity.FeeAssessment, error)); ok {
+		return returnFunc(context1, feeAssessmentFilter)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.FeeAssessmentFilter) []entity.FeeAssessment); ok {
+		r0 = returnFunc(context1, feeAssessmentFilter)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.FeeAssessment)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.FeeAssessmentFilter) error); ok {
+		r1 = returnFunc(context1, feeAssessmentFilter)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockService_Read_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Read'
+type MockService_Read_Call struct {
+	*mock.Call
+}
+
+// Read is a helper method to define mock.On call
+//   - context1 context.Context
+//   - feeAssessmentFilter entity.FeeAssessmentFilter
+func (_e *MockService_Expecter) Read(context1 interface{}, feeAssessmentFilter interface{}) *MockService_Read_Call {
+	return &MockService_Read_Call{Call: _e.mock.On("Read", context1, feeAssessmentFilter)}
+}
+
+func (_c *MockService_Read_Call) Run(run func(context1 context.Context, feeAssessmentFilter entity.FeeAssessmentFilter)) *MockService_Read_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 entity.FeeAssessmentFilter
+		if args[1] != nil {
+			arg1 = args[1].(entity.FeeAssessmentFilter)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockService_Read_Call) Return(feeAssessments []entity.FeeAssessment, err error) *MockService_Read_Call {
+	_c.Call.Return(feeAssessments, err)
+	return _c
+}
+
+func (_c *MockService_Read_Call) RunAndReturn(run func(context1 context.Context, feeAssessmentFilter entity.FeeAssessmentFilter) ([]entity.FeeAssessment, error)) *MockService_Read_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ReverseOnCauseReversal provides a mock function for the type MockService
 func (_mock *MockService) ReverseOnCauseReversal(context1 context.Context, account entity.Account, day entity.Day) error {
 	ret := _mock.Called(context1, account, day)

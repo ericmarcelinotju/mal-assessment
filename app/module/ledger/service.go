@@ -1,10 +1,10 @@
-// Package ledger owns the append-only journal: the entries themselves, the
-// value-dated balances derived from them, and the record of instructions that
-// were refused.
+// Package ledger owns the append-only journal: the entries themselves and the
+// value-dated balances derived from them.
 //
-// It is the base module. It knows nothing about holds, fees or interest -- those
-// modules depend on this one, never the other way round, so the dependency
-// graph stays a DAG and the journal cannot be made to care why an entry exists.
+// It is the base module. It knows nothing about accounts, holds, fees or
+// interest -- those modules depend on this one, never the other way round, so
+// the dependency graph stays a DAG and the journal cannot be made to care why
+// an entry exists.
 package ledger
 
 import (
@@ -12,16 +12,26 @@ import (
 	"strconv"
 
 	"github.com/ericmarcelinotju/mal-assessment/app/entity"
+	"github.com/ericmarcelinotju/mal-assessment/app/module/rejection"
 	"github.com/ericmarcelinotju/mal-assessment/apperror"
 )
 
+// Service is Create and Read over the journal, plus the domain operations built
+// from them.
+//
+// There is no Update and no Delete, matching the repository: the journal is
+// append-only and a correction is a new entry, never an edit. Reverse is the
+// closest thing to a delete this module offers, and it appends.
 type Service interface {
-	// Post appends a signed amount, splitting it into instalments when the
-	// event asks for them.
-	Post(context.Context, entity.Account, entity.Event, entity.Money, entity.EntryOrigin) ([]entity.LedgerEntry, error)
-	// Append books a single entry the caller has already shaped. Fee and
+	// Create books a single entry the caller has already shaped. Fee and
 	// interest use it; instruction handling goes through Post.
-	Append(context.Context, entity.LedgerEntry) (entity.LedgerEntry, error)
+	Create(context.Context, entity.LedgerEntry) (entity.LedgerEntry, error)
+	// Read returns the entries matching a filter.
+	Read(context.Context, entity.LedgerEntryFilter) ([]entity.LedgerEntry, error)
+
+	// Post books a signed amount, splitting it into instalments when the event
+	// asks for them.
+	Post(context.Context, entity.Account, entity.Event, entity.Money, entity.EntryOrigin) ([]entity.LedgerEntry, error)
 	// Reverse books contra entries against every entry of an earlier event.
 	Reverse(context.Context, entity.Account, entity.Event) ([]entity.LedgerEntry, error)
 
@@ -30,65 +40,37 @@ type Service interface {
 	ClosingBalance(context.Context, entity.Account, entity.Day) (entity.Money, error)
 	// ClosingBalanceExcluding is the same figure with one entry left out.
 	ClosingBalanceExcluding(context.Context, entity.Account, entity.Day, int) (entity.Money, error)
-
-	Entries(context.Context) ([]entity.LedgerEntry, error)
-	Errors(context.Context) ([]entity.LedgerError, error)
-	// Reject records a refused instruction and returns the coded error.
-	Reject(context.Context, entity.Event, apperror.ErrorCode, string) error
 }
 
 type service struct {
-	repo Repository
+	repo       Repository
+	rejections rejection.Service
 }
 
-func NewService(repo Repository) Service {
-	return &service{repo: repo}
+func NewService(repo Repository, rejectionSvc rejection.Service) Service {
+	return &service{repo: repo, rejections: rejectionSvc}
 }
 
-func (s *service) Append(ctx context.Context, e entity.LedgerEntry) (entity.LedgerEntry, error) {
-	res, err := s.repo.AppendEntry(ctx, e)
+func (s *service) Create(ctx context.Context, payload entity.LedgerEntry) (entity.LedgerEntry, error) {
+	res, err := s.repo.Create(ctx, payload)
 	if err != nil {
-		return entity.LedgerEntry{}, apperror.New(apperror.ErrUnexpected, "append ledger entry error", err)
+		return entity.LedgerEntry{}, apperror.New(apperror.ErrUnexpected, "create ledger entry error", err)
 	}
 	return res, nil
 }
 
-func (s *service) Entries(ctx context.Context) ([]entity.LedgerEntry, error) {
-	res, err := s.repo.Entries(ctx)
+func (s *service) Read(
+	ctx context.Context, filter entity.LedgerEntryFilter,
+) ([]entity.LedgerEntry, error) {
+	res, err := s.repo.Read(ctx, filter)
 	if err != nil {
-		return nil, apperror.New(apperror.ErrUnexpected, "read ledger entries error", err)
+		return nil, apperror.New(apperror.ErrUnexpected, "read ledger entry error", err)
 	}
 	return res, nil
 }
 
-func (s *service) Errors(ctx context.Context) ([]entity.LedgerError, error) {
-	res, err := s.repo.Errors(ctx)
-	if err != nil {
-		return nil, apperror.New(apperror.ErrUnexpected, "read ledger errors error", err)
-	}
-	return res, nil
-}
-
-// Reject records a refused instruction on the journal and returns the error.
-// Every rejection is both surfaced to the caller and retained for the day's
-// report: "nothing happened" is a fact an operator needs stated, not an absence.
-func (s *service) Reject(
-	ctx context.Context, ev entity.Event, code apperror.ErrorCode, msg string,
-) error {
-	if err := s.repo.AppendError(ctx, entity.LedgerError{
-		Day:       ev.PostingDay,
-		EventID:   ev.ID,
-		AccountID: ev.AccountID,
-		Code:      string(code),
-		Message:   msg,
-	}); err != nil {
-		return apperror.New(apperror.ErrUnexpected, "append ledger error record error", err)
-	}
-	return apperror.New(code, msg)
-}
-
-// Post appends a signed amount, splitting it into instalments when the event
-// asks for them.
+// Post books a signed amount, splitting it into instalments when the event asks
+// for them.
 //
 // Note what is absent: no available-balance test. The brief applies that test
 // to authorizations only, and rightly so -- a debit that cannot be funded is
@@ -102,7 +84,7 @@ func (s *service) Post(
 	if ev.Instalments > 1 {
 		split, err := entity.SplitInstalments(signed, ev.Instalments)
 		if err != nil {
-			return nil, s.Reject(ctx, ev, apperror.ErrInvalidParameter, err.Error())
+			return nil, s.rejections.Create(ctx, ev, apperror.ErrInvalidParameter, err.Error())
 		}
 		parts = split
 	}
@@ -113,7 +95,7 @@ func (s *service) Post(
 		if len(parts) > 1 {
 			memo = memo + " instalment " + strconv.Itoa(i+1) + "/" + strconv.Itoa(len(parts))
 		}
-		entry, err := s.Append(ctx, entity.LedgerEntry{
+		entry, err := s.Create(ctx, entity.LedgerEntry{
 			EventID:    ev.ID,
 			AccountID:  acc.ID,
 			PostingDay: ev.PostingDay,
@@ -141,31 +123,31 @@ func (s *service) Post(
 func (s *service) Reverse(
 	ctx context.Context, acc entity.Account, ev entity.Event,
 ) ([]entity.LedgerEntry, error) {
-	all, err := s.Entries(ctx)
+	all, err := s.Read(ctx, entity.LedgerEntryFilter{AccountID: acc.ID})
 	if err != nil {
 		return nil, err
 	}
 
 	var targets []entity.LedgerEntry
 	for _, e := range all {
-		if e.EventID == ev.ReversesEventID && e.AccountID == acc.ID {
+		if e.EventID == ev.ReversesEventID {
 			targets = append(targets, e)
 		}
 	}
 	if len(targets) == 0 {
-		return nil, s.Reject(ctx, ev, apperror.ErrUnknownEventRef,
+		return nil, s.rejections.Create(ctx, ev, apperror.ErrUnknownEventRef,
 			"reversal references "+string(ev.ReversesEventID)+", which has no entries on "+acc.ID)
 	}
 	for _, e := range all {
 		if e.Origin == entity.OriginReversal && e.ReversesSeq == targets[0].Seq {
-			return nil, s.Reject(ctx, ev, apperror.ErrAlreadyReversed,
+			return nil, s.rejections.Create(ctx, ev, apperror.ErrAlreadyReversed,
 				string(ev.ReversesEventID)+" is already reversed")
 		}
 	}
 
 	out := make([]entity.LedgerEntry, 0, len(targets))
 	for _, t := range targets {
-		entry, err := s.Append(ctx, entity.LedgerEntry{
+		entry, err := s.Create(ctx, entity.LedgerEntry{
 			EventID:     ev.ID,
 			AccountID:   acc.ID,
 			PostingDay:  ev.PostingDay,
@@ -183,11 +165,6 @@ func (s *service) Reverse(
 	return out, nil
 }
 
-// entryFilter selects which entries participate in a balance. Every balance in
-// this module is "the sum of the entries that pass a filter", which keeps the
-// variants the rules demand from drifting apart.
-type entryFilter func(entity.LedgerEntry) bool
-
 // ClosingBalance is the closing ledger balance for a day: the opening balance
 // plus every entry with value_date <= day.
 //
@@ -198,8 +175,8 @@ type entryFilter func(entity.LedgerEntry) bool
 func (s *service) ClosingBalance(
 	ctx context.Context, acc entity.Account, day entity.Day,
 ) (entity.Money, error) {
-	return s.balanceWhere(ctx, acc, func(e entity.LedgerEntry) bool {
-		return e.AccountID == acc.ID && e.ValueDate <= day
+	return s.sum(ctx, acc, entity.LedgerEntryFilter{
+		AccountID: acc.ID, MaxValueDate: day,
 	})
 }
 
@@ -210,23 +187,24 @@ func (s *service) ClosingBalance(
 func (s *service) ClosingBalanceExcluding(
 	ctx context.Context, acc entity.Account, day entity.Day, seq int,
 ) (entity.Money, error) {
-	return s.balanceWhere(ctx, acc, func(e entity.LedgerEntry) bool {
-		return e.AccountID == acc.ID && e.ValueDate <= day && e.Seq != seq
+	return s.sum(ctx, acc, entity.LedgerEntryFilter{
+		AccountID: acc.ID, MaxValueDate: day, ExcludeSeq: seq,
 	})
 }
 
-func (s *service) balanceWhere(
-	ctx context.Context, acc entity.Account, keep entryFilter,
+// sum is the opening balance plus every entry the filter selects. Every balance
+// in this module goes through it, which keeps the variants the rules demand
+// from drifting apart.
+func (s *service) sum(
+	ctx context.Context, acc entity.Account, filter entity.LedgerEntryFilter,
 ) (entity.Money, error) {
-	all, err := s.Entries(ctx)
+	entries, err := s.Read(ctx, filter)
 	if err != nil {
 		return entity.Money{}, err
 	}
 	total := acc.Opening
-	for _, e := range all {
-		if keep(e) {
-			total = total.Add(e.Amount)
-		}
+	for _, e := range entries {
+		total = total.Add(e.Amount)
 	}
 	return total, nil
 }

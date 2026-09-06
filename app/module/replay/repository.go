@@ -8,13 +8,12 @@ import (
 
 // Repository holds the event stream to be replayed.
 //
-// Separating it from the service is what lets the six-day brief scenario and a
-// test fixture enter the same way: the service asks for events, it does not
-// know they were hard-coded. Like every repository here it is append-only and
-// read-only after loading -- the stream is history, and history is not edited.
+// Create and Read only. The stream is history: an event either arrived or it
+// did not, and editing one after the fact would make the replay describe
+// something that never happened.
 type Repository interface {
-	Load(context.Context, []entity.Event) error
-	Events(context.Context) ([]entity.Event, error)
+	Create(context.Context, entity.Event) (entity.Event, error)
+	Read(context.Context, entity.EventFilter) ([]entity.Event, error)
 }
 
 type repository struct {
@@ -25,14 +24,22 @@ func NewRepository() Repository {
 	return &repository{}
 }
 
-func (s *repository) Load(_ context.Context, events []entity.Event) error {
-	s.events = append(s.events, events...)
-	return nil
+func (s *repository) Create(_ context.Context, ev entity.Event) (entity.Event, error) {
+	s.events = append(s.events, ev)
+	return ev, nil
 }
 
-func (s *repository) Events(_ context.Context) ([]entity.Event, error) {
-	out := make([]entity.Event, len(s.events))
-	copy(out, s.events)
+func (s *repository) Read(_ context.Context, filter entity.EventFilter) ([]entity.Event, error) {
+	out := make([]entity.Event, 0, len(s.events))
+	for _, ev := range s.events {
+		if filter.AccountID != "" && filter.AccountID != ev.AccountID {
+			continue
+		}
+		if filter.PostingDay != 0 && filter.PostingDay != ev.PostingDay {
+			continue
+		}
+		out = append(out, ev)
+	}
 	return out, nil
 }
 
@@ -51,7 +58,8 @@ func CanonicalAccounts() []entity.Account {
 }
 
 // CanonicalStream is the event stream from the brief, transcribed verbatim and
-// in the order given.
+// in the order given. It lives beside the repository because it is seed data
+// for the event store, not behaviour.
 //
 // Note E9 (posting day 6) is listed ahead of E10 (posting day 5). That is the
 // brief's ordering, kept here exactly as stated; the service sorts by posting

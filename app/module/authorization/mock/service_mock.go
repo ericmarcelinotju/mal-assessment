@@ -110,68 +110,6 @@ func (_c *MockService_ActiveHolds_Call) RunAndReturn(run func(context1 context.C
 	return _c
 }
 
-// All provides a mock function for the type MockService
-func (_mock *MockService) All(context1 context.Context) ([]entity.Authorization, error) {
-	ret := _mock.Called(context1)
-
-	if len(ret) == 0 {
-		panic("no return value specified for All")
-	}
-
-	var r0 []entity.Authorization
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]entity.Authorization, error)); ok {
-		return returnFunc(context1)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []entity.Authorization); ok {
-		r0 = returnFunc(context1)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]entity.Authorization)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(context1)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockService_All_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'All'
-type MockService_All_Call struct {
-	*mock.Call
-}
-
-// All is a helper method to define mock.On call
-//   - context1 context.Context
-func (_e *MockService_Expecter) All(context1 interface{}) *MockService_All_Call {
-	return &MockService_All_Call{Call: _e.mock.On("All", context1)}
-}
-
-func (_c *MockService_All_Call) Run(run func(context1 context.Context)) *MockService_All_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockService_All_Call) Return(authorizations []entity.Authorization, err error) *MockService_All_Call {
-	_c.Call.Return(authorizations, err)
-	return _c
-}
-
-func (_c *MockService_All_Call) RunAndReturn(run func(context1 context.Context) ([]entity.Authorization, error)) *MockService_All_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // Authorize provides a mock function for the type MockService
 func (_mock *MockService) Authorize(context1 context.Context, account entity.Account, event entity.Event) error {
 	ret := _mock.Called(context1, account, event)
@@ -307,6 +245,197 @@ func (_c *MockService_AvailableBalance_Call) RunAndReturn(run func(context1 cont
 	return _c
 }
 
+// Create provides a mock function for the type MockService
+func (_mock *MockService) Create(context1 context.Context, authorization entity.Authorization) (entity.Authorization, error) {
+	ret := _mock.Called(context1, authorization)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Create")
+	}
+
+	var r0 entity.Authorization
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Authorization) (entity.Authorization, error)); ok {
+		return returnFunc(context1, authorization)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Authorization) entity.Authorization); ok {
+		r0 = returnFunc(context1, authorization)
+	} else {
+		r0 = ret.Get(0).(entity.Authorization)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.Authorization) error); ok {
+		r1 = returnFunc(context1, authorization)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockService_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockService_Create_Call struct {
+	*mock.Call
+}
+
+// Create is a helper method to define mock.On call
+//   - context1 context.Context
+//   - authorization entity.Authorization
+func (_e *MockService_Expecter) Create(context1 interface{}, authorization interface{}) *MockService_Create_Call {
+	return &MockService_Create_Call{Call: _e.mock.On("Create", context1, authorization)}
+}
+
+func (_c *MockService_Create_Call) Run(run func(context1 context.Context, authorization entity.Authorization)) *MockService_Create_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 entity.Authorization
+		if args[1] != nil {
+			arg1 = args[1].(entity.Authorization)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockService_Create_Call) Return(authorization1 entity.Authorization, err error) *MockService_Create_Call {
+	_c.Call.Return(authorization1, err)
+	return _c
+}
+
+func (_c *MockService_Create_Call) RunAndReturn(run func(context1 context.Context, authorization entity.Authorization) (entity.Authorization, error)) *MockService_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Delete provides a mock function for the type MockService
+func (_mock *MockService) Delete(context1 context.Context, s string) error {
+	ret := _mock.Called(context1, s)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Delete")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(context1, s)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockService_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type MockService_Delete_Call struct {
+	*mock.Call
+}
+
+// Delete is a helper method to define mock.On call
+//   - context1 context.Context
+//   - s string
+func (_e *MockService_Expecter) Delete(context1 interface{}, s interface{}) *MockService_Delete_Call {
+	return &MockService_Delete_Call{Call: _e.mock.On("Delete", context1, s)}
+}
+
+func (_c *MockService_Delete_Call) Run(run func(context1 context.Context, s string)) *MockService_Delete_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockService_Delete_Call) Return(err error) *MockService_Delete_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockService_Delete_Call) RunAndReturn(run func(context1 context.Context, s string) error) *MockService_Delete_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Read provides a mock function for the type MockService
+func (_mock *MockService) Read(context1 context.Context, authorizationFilter entity.AuthorizationFilter) ([]entity.Authorization, error) {
+	ret := _mock.Called(context1, authorizationFilter)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Read")
+	}
+
+	var r0 []entity.Authorization
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.AuthorizationFilter) ([]entity.Authorization, error)); ok {
+		return returnFunc(context1, authorizationFilter)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.AuthorizationFilter) []entity.Authorization); ok {
+		r0 = returnFunc(context1, authorizationFilter)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.Authorization)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.AuthorizationFilter) error); ok {
+		r1 = returnFunc(context1, authorizationFilter)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockService_Read_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Read'
+type MockService_Read_Call struct {
+	*mock.Call
+}
+
+// Read is a helper method to define mock.On call
+//   - context1 context.Context
+//   - authorizationFilter entity.AuthorizationFilter
+func (_e *MockService_Expecter) Read(context1 interface{}, authorizationFilter interface{}) *MockService_Read_Call {
+	return &MockService_Read_Call{Call: _e.mock.On("Read", context1, authorizationFilter)}
+}
+
+func (_c *MockService_Read_Call) Run(run func(context1 context.Context, authorizationFilter entity.AuthorizationFilter)) *MockService_Read_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 entity.AuthorizationFilter
+		if args[1] != nil {
+			arg1 = args[1].(entity.AuthorizationFilter)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockService_Read_Call) Return(authorizations []entity.Authorization, err error) *MockService_Read_Call {
+	_c.Call.Return(authorizations, err)
+	return _c
+}
+
+func (_c *MockService_Read_Call) RunAndReturn(run func(context1 context.Context, authorizationFilter entity.AuthorizationFilter) ([]entity.Authorization, error)) *MockService_Read_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Settle provides a mock function for the type MockService
 func (_mock *MockService) Settle(context1 context.Context, account entity.Account, event entity.Event) ([]entity.LedgerEntry, error) {
 	ret := _mock.Called(context1, account, event)
@@ -377,6 +506,72 @@ func (_c *MockService_Settle_Call) Return(ledgerEntrys []entity.LedgerEntry, err
 }
 
 func (_c *MockService_Settle_Call) RunAndReturn(run func(context1 context.Context, account entity.Account, event entity.Event) ([]entity.LedgerEntry, error)) *MockService_Settle_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Update provides a mock function for the type MockService
+func (_mock *MockService) Update(context1 context.Context, authorization entity.Authorization) (entity.Authorization, error) {
+	ret := _mock.Called(context1, authorization)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Update")
+	}
+
+	var r0 entity.Authorization
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Authorization) (entity.Authorization, error)); ok {
+		return returnFunc(context1, authorization)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Authorization) entity.Authorization); ok {
+		r0 = returnFunc(context1, authorization)
+	} else {
+		r0 = ret.Get(0).(entity.Authorization)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.Authorization) error); ok {
+		r1 = returnFunc(context1, authorization)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockService_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
+type MockService_Update_Call struct {
+	*mock.Call
+}
+
+// Update is a helper method to define mock.On call
+//   - context1 context.Context
+//   - authorization entity.Authorization
+func (_e *MockService_Expecter) Update(context1 interface{}, authorization interface{}) *MockService_Update_Call {
+	return &MockService_Update_Call{Call: _e.mock.On("Update", context1, authorization)}
+}
+
+func (_c *MockService_Update_Call) Run(run func(context1 context.Context, authorization entity.Authorization)) *MockService_Update_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 entity.Authorization
+		if args[1] != nil {
+			arg1 = args[1].(entity.Authorization)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockService_Update_Call) Return(authorization1 entity.Authorization, err error) *MockService_Update_Call {
+	_c.Call.Return(authorization1, err)
+	return _c
+}
+
+func (_c *MockService_Update_Call) RunAndReturn(run func(context1 context.Context, authorization entity.Authorization) (entity.Authorization, error)) *MockService_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }

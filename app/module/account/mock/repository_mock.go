@@ -38,164 +38,45 @@ func (_m *MockRepository) EXPECT() *MockRepository_Expecter {
 	return &MockRepository_Expecter{mock: &_m.Mock}
 }
 
-// All provides a mock function for the type MockRepository
-func (_mock *MockRepository) All(context1 context.Context) ([]entity.Account, error) {
-	ret := _mock.Called(context1)
+// Create provides a mock function for the type MockRepository
+func (_mock *MockRepository) Create(context1 context.Context, account entity.Account) (entity.Account, error) {
+	ret := _mock.Called(context1, account)
 
 	if len(ret) == 0 {
-		panic("no return value specified for All")
-	}
-
-	var r0 []entity.Account
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]entity.Account, error)); ok {
-		return returnFunc(context1)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []entity.Account); ok {
-		r0 = returnFunc(context1)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]entity.Account)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(context1)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockRepository_All_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'All'
-type MockRepository_All_Call struct {
-	*mock.Call
-}
-
-// All is a helper method to define mock.On call
-//   - context1 context.Context
-func (_e *MockRepository_Expecter) All(context1 interface{}) *MockRepository_All_Call {
-	return &MockRepository_All_Call{Call: _e.mock.On("All", context1)}
-}
-
-func (_c *MockRepository_All_Call) Run(run func(context1 context.Context)) *MockRepository_All_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockRepository_All_Call) Return(accounts []entity.Account, err error) *MockRepository_All_Call {
-	_c.Call.Return(accounts, err)
-	return _c
-}
-
-func (_c *MockRepository_All_Call) RunAndReturn(run func(context1 context.Context) ([]entity.Account, error)) *MockRepository_All_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// Get provides a mock function for the type MockRepository
-func (_mock *MockRepository) Get(context1 context.Context, s string) (entity.Account, error) {
-	ret := _mock.Called(context1, s)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Get")
+		panic("no return value specified for Create")
 	}
 
 	var r0 entity.Account
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (entity.Account, error)); ok {
-		return returnFunc(context1, s)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Account) (entity.Account, error)); ok {
+		return returnFunc(context1, account)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) entity.Account); ok {
-		r0 = returnFunc(context1, s)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Account) entity.Account); ok {
+		r0 = returnFunc(context1, account)
 	} else {
 		r0 = ret.Get(0).(entity.Account)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(context1, s)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.Account) error); ok {
+		r1 = returnFunc(context1, account)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// MockRepository_Get_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Get'
-type MockRepository_Get_Call struct {
+// MockRepository_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockRepository_Create_Call struct {
 	*mock.Call
 }
 
-// Get is a helper method to define mock.On call
-//   - context1 context.Context
-//   - s string
-func (_e *MockRepository_Expecter) Get(context1 interface{}, s interface{}) *MockRepository_Get_Call {
-	return &MockRepository_Get_Call{Call: _e.mock.On("Get", context1, s)}
-}
-
-func (_c *MockRepository_Get_Call) Run(run func(context1 context.Context, s string)) *MockRepository_Get_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockRepository_Get_Call) Return(account entity.Account, err error) *MockRepository_Get_Call {
-	_c.Call.Return(account, err)
-	return _c
-}
-
-func (_c *MockRepository_Get_Call) RunAndReturn(run func(context1 context.Context, s string) (entity.Account, error)) *MockRepository_Get_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// Save provides a mock function for the type MockRepository
-func (_mock *MockRepository) Save(context1 context.Context, account entity.Account) error {
-	ret := _mock.Called(context1, account)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Save")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Account) error); ok {
-		r0 = returnFunc(context1, account)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// MockRepository_Save_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Save'
-type MockRepository_Save_Call struct {
-	*mock.Call
-}
-
-// Save is a helper method to define mock.On call
+// Create is a helper method to define mock.On call
 //   - context1 context.Context
 //   - account entity.Account
-func (_e *MockRepository_Expecter) Save(context1 interface{}, account interface{}) *MockRepository_Save_Call {
-	return &MockRepository_Save_Call{Call: _e.mock.On("Save", context1, account)}
+func (_e *MockRepository_Expecter) Create(context1 interface{}, account interface{}) *MockRepository_Create_Call {
+	return &MockRepository_Create_Call{Call: _e.mock.On("Create", context1, account)}
 }
 
-func (_c *MockRepository_Save_Call) Run(run func(context1 context.Context, account entity.Account)) *MockRepository_Save_Call {
+func (_c *MockRepository_Create_Call) Run(run func(context1 context.Context, account entity.Account)) *MockRepository_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -213,12 +94,203 @@ func (_c *MockRepository_Save_Call) Run(run func(context1 context.Context, accou
 	return _c
 }
 
-func (_c *MockRepository_Save_Call) Return(err error) *MockRepository_Save_Call {
+func (_c *MockRepository_Create_Call) Return(account1 entity.Account, err error) *MockRepository_Create_Call {
+	_c.Call.Return(account1, err)
+	return _c
+}
+
+func (_c *MockRepository_Create_Call) RunAndReturn(run func(context1 context.Context, account entity.Account) (entity.Account, error)) *MockRepository_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Delete provides a mock function for the type MockRepository
+func (_mock *MockRepository) Delete(context1 context.Context, s string) error {
+	ret := _mock.Called(context1, s)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Delete")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(context1, s)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockRepository_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type MockRepository_Delete_Call struct {
+	*mock.Call
+}
+
+// Delete is a helper method to define mock.On call
+//   - context1 context.Context
+//   - s string
+func (_e *MockRepository_Expecter) Delete(context1 interface{}, s interface{}) *MockRepository_Delete_Call {
+	return &MockRepository_Delete_Call{Call: _e.mock.On("Delete", context1, s)}
+}
+
+func (_c *MockRepository_Delete_Call) Run(run func(context1 context.Context, s string)) *MockRepository_Delete_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRepository_Delete_Call) Return(err error) *MockRepository_Delete_Call {
 	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *MockRepository_Save_Call) RunAndReturn(run func(context1 context.Context, account entity.Account) error) *MockRepository_Save_Call {
+func (_c *MockRepository_Delete_Call) RunAndReturn(run func(context1 context.Context, s string) error) *MockRepository_Delete_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Read provides a mock function for the type MockRepository
+func (_mock *MockRepository) Read(context1 context.Context, accountFilter entity.AccountFilter) ([]entity.Account, error) {
+	ret := _mock.Called(context1, accountFilter)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Read")
+	}
+
+	var r0 []entity.Account
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.AccountFilter) ([]entity.Account, error)); ok {
+		return returnFunc(context1, accountFilter)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.AccountFilter) []entity.Account); ok {
+		r0 = returnFunc(context1, accountFilter)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.Account)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.AccountFilter) error); ok {
+		r1 = returnFunc(context1, accountFilter)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockRepository_Read_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Read'
+type MockRepository_Read_Call struct {
+	*mock.Call
+}
+
+// Read is a helper method to define mock.On call
+//   - context1 context.Context
+//   - accountFilter entity.AccountFilter
+func (_e *MockRepository_Expecter) Read(context1 interface{}, accountFilter interface{}) *MockRepository_Read_Call {
+	return &MockRepository_Read_Call{Call: _e.mock.On("Read", context1, accountFilter)}
+}
+
+func (_c *MockRepository_Read_Call) Run(run func(context1 context.Context, accountFilter entity.AccountFilter)) *MockRepository_Read_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 entity.AccountFilter
+		if args[1] != nil {
+			arg1 = args[1].(entity.AccountFilter)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRepository_Read_Call) Return(accounts []entity.Account, err error) *MockRepository_Read_Call {
+	_c.Call.Return(accounts, err)
+	return _c
+}
+
+func (_c *MockRepository_Read_Call) RunAndReturn(run func(context1 context.Context, accountFilter entity.AccountFilter) ([]entity.Account, error)) *MockRepository_Read_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Update provides a mock function for the type MockRepository
+func (_mock *MockRepository) Update(context1 context.Context, account entity.Account) (entity.Account, error) {
+	ret := _mock.Called(context1, account)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Update")
+	}
+
+	var r0 entity.Account
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Account) (entity.Account, error)); ok {
+		return returnFunc(context1, account)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Account) entity.Account); ok {
+		r0 = returnFunc(context1, account)
+	} else {
+		r0 = ret.Get(0).(entity.Account)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.Account) error); ok {
+		r1 = returnFunc(context1, account)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockRepository_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
+type MockRepository_Update_Call struct {
+	*mock.Call
+}
+
+// Update is a helper method to define mock.On call
+//   - context1 context.Context
+//   - account entity.Account
+func (_e *MockRepository_Expecter) Update(context1 interface{}, account interface{}) *MockRepository_Update_Call {
+	return &MockRepository_Update_Call{Call: _e.mock.On("Update", context1, account)}
+}
+
+func (_c *MockRepository_Update_Call) Run(run func(context1 context.Context, account entity.Account)) *MockRepository_Update_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 entity.Account
+		if args[1] != nil {
+			arg1 = args[1].(entity.Account)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRepository_Update_Call) Return(account1 entity.Account, err error) *MockRepository_Update_Call {
+	_c.Call.Return(account1, err)
+	return _c
+}
+
+func (_c *MockRepository_Update_Call) RunAndReturn(run func(context1 context.Context, account entity.Account) (entity.Account, error)) *MockRepository_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }

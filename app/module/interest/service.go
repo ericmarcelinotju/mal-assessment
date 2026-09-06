@@ -15,7 +15,16 @@ import (
 	"github.com/ericmarcelinotju/mal-assessment/config"
 )
 
+// Service is Create and Read over the accrual subledger, plus the domain
+// operations built from them.
+//
+// There is no Update and no Delete, matching the repository: the subledger is
+// append-only, and a day whose accrual turns out wrong gets a further record
+// carrying the difference rather than an edit of the original.
 type Service interface {
+	Create(context.Context, entity.Accrual) (entity.Accrual, error)
+	Read(context.Context, entity.AccrualFilter) ([]entity.Accrual, error)
+
 	// Accrue books interest for every day up to the processing day, restating
 	// any earlier day whose closing balance has since changed.
 	Accrue(context.Context, entity.Account, entity.Day) error
@@ -23,7 +32,6 @@ type Service interface {
 	Capitalise(context.Context, entity.Account, entity.Day) error
 	// NetAccrual is the accrual currently standing for one account-day.
 	NetAccrual(context.Context, entity.Account, entity.Day) (entity.Money, error)
-	Accruals(context.Context) ([]entity.Accrual, error)
 }
 
 type service struct {
@@ -36,10 +44,20 @@ func NewService(cfg config.Config, repo Repository, ledgerSvc ledger.Service) Se
 	return &service{cfg: cfg, repo: repo, ledger: ledgerSvc}
 }
 
-func (s *service) Accruals(ctx context.Context) ([]entity.Accrual, error) {
-	res, err := s.repo.Accruals(ctx)
+func (s *service) Create(ctx context.Context, payload entity.Accrual) (entity.Accrual, error) {
+	res, err := s.repo.Create(ctx, payload)
 	if err != nil {
-		return nil, apperror.New(apperror.ErrUnexpected, "read accruals error", err)
+		return entity.Accrual{}, apperror.New(apperror.ErrUnexpected, "create accrual error", err)
+	}
+	return res, nil
+}
+
+func (s *service) Read(
+	ctx context.Context, filter entity.AccrualFilter,
+) ([]entity.Accrual, error) {
+	res, err := s.repo.Read(ctx, filter)
+	if err != nil {
+		return nil, apperror.New(apperror.ErrUnexpected, "read accrual error", err)
 	}
 	return res, nil
 }
@@ -49,15 +67,13 @@ func (s *service) Accruals(ctx context.Context) ([]entity.Accrual, error) {
 func (s *service) NetAccrual(
 	ctx context.Context, acc entity.Account, day entity.Day,
 ) (entity.Money, error) {
-	accruals, err := s.Accruals(ctx)
+	accruals, err := s.Read(ctx, entity.AccrualFilter{AccountID: acc.ID, Day: day})
 	if err != nil {
 		return entity.Money{}, err
 	}
 	total := entity.Zero(acc.Currency)
 	for _, a := range accruals {
-		if a.AccountID == acc.ID && a.Day == day {
-			total = total.Add(a.Amount)
-		}
+		total = total.Add(a.Amount)
 	}
 	return total, nil
 }
@@ -110,7 +126,7 @@ func (s *service) Accrue(ctx context.Context, acc entity.Account, processingDay 
 			continue
 		}
 
-		if _, err := s.repo.AppendAccrual(ctx, entity.Accrual{
+		if _, err := s.Create(ctx, entity.Accrual{
 			AccountID:    acc.ID,
 			Day:          day,
 			BookedOnDay:  processingDay,
@@ -118,7 +134,7 @@ func (s *service) Accrue(ctx context.Context, acc entity.Account, processingDay 
 			Basis:        balance,
 			IsAdjustment: !booked.IsZero() || day != processingDay,
 		}); err != nil {
-			return apperror.New(apperror.ErrUnexpected, "append accrual error", err)
+			return err
 		}
 	}
 	return nil
@@ -144,22 +160,20 @@ func (s *service) Accrue(ctx context.Context, acc entity.Account, processingDay 
 // largest-remainder to force the dailies to sum to it -- also satisfies the rule
 // and yields 0.92. See AMBIGUITIES.md for why the daily is the primitive.
 func (s *service) Capitalise(ctx context.Context, acc entity.Account, day entity.Day) error {
-	accruals, err := s.Accruals(ctx)
+	accruals, err := s.Read(ctx, entity.AccrualFilter{AccountID: acc.ID})
 	if err != nil {
 		return err
 	}
 
 	total := entity.Zero(acc.Currency)
 	for _, a := range accruals {
-		if a.AccountID == acc.ID {
-			total = total.Add(a.Amount)
-		}
+		total = total.Add(a.Amount)
 	}
 	if total.IsZero() {
 		return nil
 	}
 
-	_, err = s.ledger.Append(ctx, entity.LedgerEntry{
+	_, err = s.ledger.Create(ctx, entity.LedgerEntry{
 		EventID:    entity.EventID("INT"),
 		AccountID:  acc.ID,
 		PostingDay: day,

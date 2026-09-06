@@ -3,8 +3,8 @@
 // cycle in the right order, and assembles the report.
 //
 // It is the only module that depends on all the others, and nothing depends on
-// it. That is what keeps the graph a DAG: account, ledger, authorization, fee
-// and interest never need to know a replay exists.
+// it. That is what keeps the graph a DAG: account, ledger, rejection,
+// authorization, fee and interest never need to know a replay exists.
 package replay
 
 import (
@@ -17,11 +17,15 @@ import (
 	"github.com/ericmarcelinotju/mal-assessment/app/module/fee"
 	"github.com/ericmarcelinotju/mal-assessment/app/module/interest"
 	"github.com/ericmarcelinotju/mal-assessment/app/module/ledger"
+	"github.com/ericmarcelinotju/mal-assessment/app/module/rejection"
 	"github.com/ericmarcelinotju/mal-assessment/apperror"
 	"github.com/ericmarcelinotju/mal-assessment/config"
 )
 
 type Service interface {
+	Create(context.Context, entity.Event) (entity.Event, error)
+	Read(context.Context, entity.EventFilter) ([]entity.Event, error)
+
 	// Post applies one instruction, routing it to the owning module.
 	Post(context.Context, entity.Event) ([]entity.LedgerEntry, error)
 	// CloseDay runs the end-of-day cycle for every account.
@@ -38,12 +42,13 @@ type Service interface {
 type service struct {
 	cfg config.Config
 
-	repo     Repository
-	accounts account.Service
-	ledger   ledger.Service
-	auths    authorization.Service
-	fees     fee.Service
-	interest interest.Service
+	repo       Repository
+	accounts   account.Service
+	ledger     ledger.Service
+	rejections rejection.Service
+	auths      authorization.Service
+	fees       fee.Service
+	interest   interest.Service
 }
 
 func NewService(
@@ -51,33 +56,56 @@ func NewService(
 	repo Repository,
 	accountSvc account.Service,
 	ledgerSvc ledger.Service,
+	rejectionSvc rejection.Service,
 	authSvc authorization.Service,
 	feeSvc fee.Service,
 	interestSvc interest.Service,
 ) Service {
 	return &service{
-		cfg:      cfg,
-		repo:     repo,
-		accounts: accountSvc,
-		ledger:   ledgerSvc,
-		auths:    authSvc,
-		fees:     feeSvc,
-		interest: interestSvc,
+		cfg:        cfg,
+		repo:       repo,
+		accounts:   accountSvc,
+		ledger:     ledgerSvc,
+		rejections: rejectionSvc,
+		auths:      authSvc,
+		fees:       feeSvc,
+		interest:   interestSvc,
 	}
 }
 
 func (s *service) Config() config.Config { return s.cfg }
 
+func (s *service) Create(ctx context.Context, payload entity.Event) (entity.Event, error) {
+	res, err := s.repo.Create(ctx, payload)
+	if err != nil {
+		return entity.Event{}, apperror.New(apperror.ErrUnexpected, "create event error", err)
+	}
+	return res, nil
+}
+
+func (s *service) Read(ctx context.Context, filter entity.EventFilter) ([]entity.Event, error) {
+	res, err := s.repo.Read(ctx, filter)
+	if err != nil {
+		return nil, apperror.New(apperror.ErrUnexpected, "read event error", err)
+	}
+	return res, nil
+}
+
 // Post routes one instruction to the module that owns it. It decides nothing
 // about the instruction itself beyond which module should see it.
 func (s *service) Post(ctx context.Context, ev entity.Event) ([]entity.LedgerEntry, error) {
-	acc, err := s.accounts.Get(ctx, ev.AccountID)
+	accounts, err := s.accounts.Read(ctx, entity.AccountFilter{ID: ev.AccountID})
 	if err != nil {
-		return nil, s.ledger.Reject(ctx, ev, apperror.ErrUnknownAccount,
+		return nil, err
+	}
+	if len(accounts) == 0 {
+		return nil, s.rejections.Create(ctx, ev, apperror.ErrUnknownAccount,
 			"unknown account "+ev.AccountID)
 	}
+	acc := accounts[0]
+
 	if ev.HasStatedAmount() && ev.Amount.Currency() != acc.Currency {
-		return nil, s.ledger.Reject(ctx, ev, apperror.ErrCurrencyMismatch,
+		return nil, s.rejections.Create(ctx, ev, apperror.ErrCurrencyMismatch,
 			"event is "+ev.Amount.Currency().String()+" but account "+acc.ID+
 				" is "+acc.Currency.String())
 	}
@@ -94,7 +122,7 @@ func (s *service) Post(ctx context.Context, ev entity.Event) ([]entity.LedgerEnt
 	case entity.EventReversal:
 		return s.ledger.Reverse(ctx, acc, ev)
 	default:
-		return nil, s.ledger.Reject(ctx, ev, apperror.ErrInvalidParameter,
+		return nil, s.rejections.Create(ctx, ev, apperror.ErrInvalidParameter,
 			"unsupported event type "+string(ev.Type))
 	}
 }
@@ -115,12 +143,14 @@ func (s *service) Post(ctx context.Context, ev entity.Event) ([]entity.LedgerEnt
 // orphan settlement are recorded outcomes, not failures, and the remaining
 // events still have to be processed.
 func (s *service) Run(ctx context.Context, events []entity.Event) error {
-	if err := s.repo.Load(ctx, events); err != nil {
-		return apperror.New(apperror.ErrUnexpected, "load event stream error", err)
+	for _, ev := range events {
+		if _, err := s.Create(ctx, ev); err != nil {
+			return err
+		}
 	}
-	ordered, err := s.repo.Events(ctx)
+	ordered, err := s.Read(ctx, entity.EventFilter{})
 	if err != nil {
-		return apperror.New(apperror.ErrUnexpected, "read event stream error", err)
+		return err
 	}
 	sort.SliceStable(ordered, func(i, j int) bool {
 		return ordered[i].PostingDay < ordered[j].PostingDay
@@ -129,7 +159,7 @@ func (s *service) Run(ctx context.Context, events []entity.Event) error {
 	next := 0
 	for day := entity.Day(1); day <= entity.Day(s.cfg.WindowDays); day++ {
 		for next < len(ordered) && ordered[next].PostingDay == day {
-			//nolint:errcheck // rejections are recorded on the journal and reported per day
+			//nolint:errcheck // rejections are recorded and reported under their own day
 			_, _ = s.Post(ctx, ordered[next])
 			next++
 		}
@@ -160,7 +190,7 @@ func (s *service) Run(ctx context.Context, events []entity.Event) error {
 // decide whether interest can rescue a day from its overdraft fee. It cannot.
 // See AMBIGUITIES.md.
 func (s *service) CloseDay(ctx context.Context, day entity.Day) error {
-	accounts, err := s.accounts.All(ctx)
+	accounts, err := s.accounts.Read(ctx, entity.AccountFilter{})
 	if err != nil {
 		return err
 	}
@@ -188,28 +218,12 @@ func (s *service) CloseDay(ctx context.Context, day entity.Day) error {
 
 // Report builds one row per day per account by asking each module for the part
 // it owns: balances from ledger, holds from authorization, accruals from
-// interest, rejections from the journal.
+// interest, refusals from rejection.
 //
 // Everything here is derived on demand. No figure is cached at close time, so
 // the report cannot drift from the entries that justify it.
 func (s *service) Report(ctx context.Context) ([]entity.DayReport, error) {
-	accounts, err := s.accounts.All(ctx)
-	if err != nil {
-		return nil, err
-	}
-	entries, err := s.ledger.Entries(ctx)
-	if err != nil {
-		return nil, err
-	}
-	journalErrors, err := s.ledger.Errors(ctx)
-	if err != nil {
-		return nil, err
-	}
-	accruals, err := s.interest.Accruals(ctx)
-	if err != nil {
-		return nil, err
-	}
-	auths, err := s.auths.All(ctx)
+	accounts, err := s.accounts.Read(ctx, entity.AccountFilter{})
 	if err != nil {
 		return nil, err
 	}
@@ -217,68 +231,80 @@ func (s *service) Report(ctx context.Context) ([]entity.DayReport, error) {
 	var out []entity.DayReport
 	for day := entity.Day(1); day <= entity.Day(s.cfg.WindowDays); day++ {
 		for _, acc := range accounts {
-			closing, err := s.ledger.ClosingBalance(ctx, acc, day)
+			row, err := s.reportRow(ctx, acc, day)
 			if err != nil {
 				return nil, err
 			}
-			holds, err := s.auths.ActiveHolds(ctx, acc, day)
-			if err != nil {
-				return nil, err
-			}
-			available, err := s.auths.AvailableBalance(ctx, acc, day)
-			if err != nil {
-				return nil, err
-			}
-			accrued, err := s.interest.NetAccrual(ctx, acc, day)
-			if err != nil {
-				return nil, err
-			}
-
-			row := entity.DayReport{
-				Day:              day,
-				AccountID:        acc.ID,
-				Currency:         acc.Currency,
-				ClosingBalance:   closing,
-				ActiveHolds:      holds,
-				AvailableBalance: available,
-				InterestAccrued:  accrued,
-			}
-
-			for _, e := range entries {
-				if e.AccountID != acc.ID || e.ValueDate != day {
-					continue
-				}
-				switch e.Origin {
-				case entity.OriginOverdraftFee:
-					row.FeesAssessed = append(row.FeesAssessed, e)
-				case entity.OriginFeeReversal:
-					row.FeesReversed = append(row.FeesReversed, e)
-				case entity.OriginCapitalisation:
-					credit := e
-					row.Capitalisation = &credit
-				}
-				if e.Origin != entity.OriginCapitalisation {
-					row.Entries = append(row.Entries, e)
-				}
-			}
-			for _, a := range accruals {
-				if a.AccountID == acc.ID && a.Day == day {
-					row.AccrualTrail = append(row.AccrualTrail, a)
-				}
-			}
-			for _, a := range auths {
-				if a.AccountID == acc.ID && a.PostingDay == day {
-					row.Authorizations = append(row.Authorizations, a)
-				}
-			}
-			for _, e := range journalErrors {
-				if e.AccountID == acc.ID && e.Day == day {
-					row.Errors = append(row.Errors, e)
-				}
-			}
-
 			out = append(out, row)
 		}
 	}
 	return out, nil
+}
+
+func (s *service) reportRow(
+	ctx context.Context, acc entity.Account, day entity.Day,
+) (entity.DayReport, error) {
+	closing, err := s.ledger.ClosingBalance(ctx, acc, day)
+	if err != nil {
+		return entity.DayReport{}, err
+	}
+	holds, err := s.auths.ActiveHolds(ctx, acc, day)
+	if err != nil {
+		return entity.DayReport{}, err
+	}
+	available, err := s.auths.AvailableBalance(ctx, acc, day)
+	if err != nil {
+		return entity.DayReport{}, err
+	}
+	accrued, err := s.interest.NetAccrual(ctx, acc, day)
+	if err != nil {
+		return entity.DayReport{}, err
+	}
+
+	row := entity.DayReport{
+		Day:              day,
+		AccountID:        acc.ID,
+		Currency:         acc.Currency,
+		ClosingBalance:   closing,
+		ActiveHolds:      holds,
+		AvailableBalance: available,
+		InterestAccrued:  accrued,
+	}
+
+	entries, err := s.ledger.Read(ctx, entity.LedgerEntryFilter{AccountID: acc.ID, ValueDate: day})
+	if err != nil {
+		return entity.DayReport{}, err
+	}
+	for _, e := range entries {
+		switch e.Origin {
+		case entity.OriginOverdraftFee:
+			row.FeesAssessed = append(row.FeesAssessed, e)
+		case entity.OriginFeeReversal:
+			row.FeesReversed = append(row.FeesReversed, e)
+		case entity.OriginCapitalisation:
+			credit := e
+			row.Capitalisation = &credit
+		}
+		if e.Origin != entity.OriginCapitalisation {
+			row.Entries = append(row.Entries, e)
+		}
+	}
+
+	row.AccrualTrail, err = s.interest.Read(ctx,
+		entity.AccrualFilter{AccountID: acc.ID, Day: day})
+	if err != nil {
+		return entity.DayReport{}, err
+	}
+	row.Authorizations, err = s.auths.Read(ctx,
+		entity.AuthorizationFilter{AccountID: acc.ID, PostingDay: day})
+	if err != nil {
+		return entity.DayReport{}, err
+	}
+	row.Errors, err = s.rejections.Read(ctx,
+		entity.RejectionFilter{AccountID: acc.ID, Day: day})
+	if err != nil {
+		return entity.DayReport{}, err
+	}
+
+	return row, nil
 }

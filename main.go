@@ -14,11 +14,13 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/ericmarcelinotju/mal-assessment/app/entity"
 	"github.com/ericmarcelinotju/mal-assessment/app/module/account"
 	"github.com/ericmarcelinotju/mal-assessment/app/module/authorization"
 	"github.com/ericmarcelinotju/mal-assessment/app/module/fee"
 	"github.com/ericmarcelinotju/mal-assessment/app/module/interest"
 	"github.com/ericmarcelinotju/mal-assessment/app/module/ledger"
+	"github.com/ericmarcelinotju/mal-assessment/app/module/rejection"
 	"github.com/ericmarcelinotju/mal-assessment/app/module/replay"
 	"github.com/ericmarcelinotju/mal-assessment/app/presenter"
 	"github.com/ericmarcelinotju/mal-assessment/config"
@@ -36,18 +38,19 @@ func main() {
 	cfg := config.Load()
 
 	accountSvc := account.NewService(account.NewRepository())
-	ledgerSvc := ledger.NewService(ledger.NewRepository())
-	authSvc := authorization.NewService(authorization.NewRepository(), ledgerSvc)
+	rejectionSvc := rejection.NewService(rejection.NewRepository())
+	ledgerSvc := ledger.NewService(ledger.NewRepository(), rejectionSvc)
+	authSvc := authorization.NewService(authorization.NewRepository(), ledgerSvc, rejectionSvc)
 	feeSvc := fee.NewService(cfg, fee.NewRepository(), ledgerSvc)
 	interestSvc := interest.NewService(cfg, interest.NewRepository(), ledgerSvc)
 
 	replaySvc := replay.NewService(
 		cfg, replay.NewRepository(),
-		accountSvc, ledgerSvc, authSvc, feeSvc, interestSvc,
+		accountSvc, ledgerSvc, rejectionSvc, authSvc, feeSvc, interestSvc,
 	)
 
 	for _, acc := range replay.CanonicalAccounts() {
-		if err := accountSvc.Register(ctx, acc); err != nil {
+		if _, err := accountSvc.Create(ctx, acc); err != nil {
 			fail(err)
 		}
 	}
@@ -63,7 +66,7 @@ func main() {
 	if err != nil {
 		fail(err)
 	}
-	entries, err := ledgerSvc.Entries(ctx)
+	entries, err := ledgerSvc.Read(ctx, entity.LedgerEntryFilter{})
 	if err != nil {
 		fail(err)
 	}

@@ -38,68 +38,6 @@ func (_m *MockService) EXPECT() *MockService_Expecter {
 	return &MockService_Expecter{mock: &_m.Mock}
 }
 
-// Accruals provides a mock function for the type MockService
-func (_mock *MockService) Accruals(context1 context.Context) ([]entity.Accrual, error) {
-	ret := _mock.Called(context1)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Accruals")
-	}
-
-	var r0 []entity.Accrual
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]entity.Accrual, error)); ok {
-		return returnFunc(context1)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []entity.Accrual); ok {
-		r0 = returnFunc(context1)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]entity.Accrual)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(context1)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockService_Accruals_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Accruals'
-type MockService_Accruals_Call struct {
-	*mock.Call
-}
-
-// Accruals is a helper method to define mock.On call
-//   - context1 context.Context
-func (_e *MockService_Expecter) Accruals(context1 interface{}) *MockService_Accruals_Call {
-	return &MockService_Accruals_Call{Call: _e.mock.On("Accruals", context1)}
-}
-
-func (_c *MockService_Accruals_Call) Run(run func(context1 context.Context)) *MockService_Accruals_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockService_Accruals_Call) Return(accruals []entity.Accrual, err error) *MockService_Accruals_Call {
-	_c.Call.Return(accruals, err)
-	return _c
-}
-
-func (_c *MockService_Accruals_Call) RunAndReturn(run func(context1 context.Context) ([]entity.Accrual, error)) *MockService_Accruals_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // Accrue provides a mock function for the type MockService
 func (_mock *MockService) Accrue(context1 context.Context, account entity.Account, day entity.Day) error {
 	ret := _mock.Called(context1, account, day)
@@ -226,6 +164,72 @@ func (_c *MockService_Capitalise_Call) RunAndReturn(run func(context1 context.Co
 	return _c
 }
 
+// Create provides a mock function for the type MockService
+func (_mock *MockService) Create(context1 context.Context, accrual entity.Accrual) (entity.Accrual, error) {
+	ret := _mock.Called(context1, accrual)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Create")
+	}
+
+	var r0 entity.Accrual
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Accrual) (entity.Accrual, error)); ok {
+		return returnFunc(context1, accrual)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Accrual) entity.Accrual); ok {
+		r0 = returnFunc(context1, accrual)
+	} else {
+		r0 = ret.Get(0).(entity.Accrual)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.Accrual) error); ok {
+		r1 = returnFunc(context1, accrual)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockService_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockService_Create_Call struct {
+	*mock.Call
+}
+
+// Create is a helper method to define mock.On call
+//   - context1 context.Context
+//   - accrual entity.Accrual
+func (_e *MockService_Expecter) Create(context1 interface{}, accrual interface{}) *MockService_Create_Call {
+	return &MockService_Create_Call{Call: _e.mock.On("Create", context1, accrual)}
+}
+
+func (_c *MockService_Create_Call) Run(run func(context1 context.Context, accrual entity.Accrual)) *MockService_Create_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 entity.Accrual
+		if args[1] != nil {
+			arg1 = args[1].(entity.Accrual)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockService_Create_Call) Return(accrual1 entity.Accrual, err error) *MockService_Create_Call {
+	_c.Call.Return(accrual1, err)
+	return _c
+}
+
+func (_c *MockService_Create_Call) RunAndReturn(run func(context1 context.Context, accrual entity.Accrual) (entity.Accrual, error)) *MockService_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NetAccrual provides a mock function for the type MockService
 func (_mock *MockService) NetAccrual(context1 context.Context, account entity.Account, day entity.Day) (entity.Money, error) {
 	ret := _mock.Called(context1, account, day)
@@ -294,6 +298,74 @@ func (_c *MockService_NetAccrual_Call) Return(money entity.Money, err error) *Mo
 }
 
 func (_c *MockService_NetAccrual_Call) RunAndReturn(run func(context1 context.Context, account entity.Account, day entity.Day) (entity.Money, error)) *MockService_NetAccrual_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Read provides a mock function for the type MockService
+func (_mock *MockService) Read(context1 context.Context, accrualFilter entity.AccrualFilter) ([]entity.Accrual, error) {
+	ret := _mock.Called(context1, accrualFilter)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Read")
+	}
+
+	var r0 []entity.Accrual
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.AccrualFilter) ([]entity.Accrual, error)); ok {
+		return returnFunc(context1, accrualFilter)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.AccrualFilter) []entity.Accrual); ok {
+		r0 = returnFunc(context1, accrualFilter)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.Accrual)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.AccrualFilter) error); ok {
+		r1 = returnFunc(context1, accrualFilter)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockService_Read_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Read'
+type MockService_Read_Call struct {
+	*mock.Call
+}
+
+// Read is a helper method to define mock.On call
+//   - context1 context.Context
+//   - accrualFilter entity.AccrualFilter
+func (_e *MockService_Expecter) Read(context1 interface{}, accrualFilter interface{}) *MockService_Read_Call {
+	return &MockService_Read_Call{Call: _e.mock.On("Read", context1, accrualFilter)}
+}
+
+func (_c *MockService_Read_Call) Run(run func(context1 context.Context, accrualFilter entity.AccrualFilter)) *MockService_Read_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 entity.AccrualFilter
+		if args[1] != nil {
+			arg1 = args[1].(entity.AccrualFilter)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockService_Read_Call) Return(accruals []entity.Accrual, err error) *MockService_Read_Call {
+	_c.Call.Return(accruals, err)
+	return _c
+}
+
+func (_c *MockService_Read_Call) RunAndReturn(run func(context1 context.Context, accrualFilter entity.AccrualFilter) ([]entity.Accrual, error)) *MockService_Read_Call {
 	_c.Call.Return(run)
 	return _c
 }

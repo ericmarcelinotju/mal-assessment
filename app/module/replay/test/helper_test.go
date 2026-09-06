@@ -13,6 +13,7 @@ import (
 	"github.com/ericmarcelinotju/mal-assessment/app/module/fee"
 	"github.com/ericmarcelinotju/mal-assessment/app/module/interest"
 	"github.com/ericmarcelinotju/mal-assessment/app/module/ledger"
+	"github.com/ericmarcelinotju/mal-assessment/app/module/rejection"
 	"github.com/ericmarcelinotju/mal-assessment/app/module/replay"
 	"github.com/ericmarcelinotju/mal-assessment/config"
 )
@@ -21,10 +22,11 @@ import (
 // they run against real in-memory repositories throughout; the per-module tests
 // use mocks to drive the failure paths instead.
 type stack struct {
-	replay   replay.Service
-	ledger   ledger.Service
-	interest interest.Service
-	auths    authorization.Service
+	replay     replay.Service
+	ledger     ledger.Service
+	interest   interest.Service
+	auths      authorization.Service
+	rejections rejection.Service
 }
 
 // newStack composes the modules the same way main does, so a wiring mistake in
@@ -35,21 +37,24 @@ func newStack(t *testing.T, policy config.FeeReversalPolicy, accounts ...entity.
 	cfg.FeeReversal = policy
 
 	accountSvc := account.NewService(account.NewRepository())
-	ledgerSvc := ledger.NewService(ledger.NewRepository())
-	authSvc := authorization.NewService(authorization.NewRepository(), ledgerSvc)
+	rejectionSvc := rejection.NewService(rejection.NewRepository())
+	ledgerSvc := ledger.NewService(ledger.NewRepository(), rejectionSvc)
+	authSvc := authorization.NewService(authorization.NewRepository(), ledgerSvc, rejectionSvc)
 	feeSvc := fee.NewService(cfg, fee.NewRepository(), ledgerSvc)
 	interestSvc := interest.NewService(cfg, interest.NewRepository(), ledgerSvc)
 
 	for _, acc := range accounts {
-		assert.NoError(t, accountSvc.Register(context.Background(), acc))
+		_, err := accountSvc.Create(context.Background(), acc)
+		assert.NoError(t, err)
 	}
 
 	return stack{
 		replay: replay.NewService(cfg, replay.NewRepository(),
-			accountSvc, ledgerSvc, authSvc, feeSvc, interestSvc),
-		ledger:   ledgerSvc,
-		interest: interestSvc,
-		auths:    authSvc,
+			accountSvc, ledgerSvc, rejectionSvc, authSvc, feeSvc, interestSvc),
+		rejections: rejectionSvc,
+		ledger:     ledgerSvc,
+		interest:   interestSvc,
+		auths:      authSvc,
 	}
 }
 
@@ -90,21 +95,21 @@ func row(t *testing.T, s stack, accountID string, day entity.Day) entity.DayRepo
 
 func entries(t *testing.T, s stack) []entity.LedgerEntry {
 	t.Helper()
-	out, err := s.ledger.Entries(context.Background())
+	out, err := s.ledger.Read(context.Background(), entity.LedgerEntryFilter{})
 	assert.NoError(t, err)
 	return out
 }
 
 func accruals(t *testing.T, s stack) []entity.Accrual {
 	t.Helper()
-	out, err := s.interest.Accruals(context.Background())
+	out, err := s.interest.Read(context.Background(), entity.AccrualFilter{})
 	assert.NoError(t, err)
 	return out
 }
 
 func journalErrors(t *testing.T, s stack) []entity.LedgerError {
 	t.Helper()
-	out, err := s.ledger.Errors(context.Background())
+	out, err := s.rejections.Read(context.Background(), entity.RejectionFilter{})
 	assert.NoError(t, err)
 	return out
 }
@@ -112,7 +117,7 @@ func journalErrors(t *testing.T, s stack) []entity.LedgerError {
 // auth looks up one authorization by ID.
 func auth(t *testing.T, s stack, id string) (entity.Authorization, bool) {
 	t.Helper()
-	all, err := s.auths.All(context.Background())
+	all, err := s.auths.Read(context.Background(), entity.AuthorizationFilter{})
 	assert.NoError(t, err)
 	for _, a := range all {
 		if a.AuthID == id {

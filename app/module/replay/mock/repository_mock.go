@@ -38,106 +38,53 @@ func (_m *MockRepository) EXPECT() *MockRepository_Expecter {
 	return &MockRepository_Expecter{mock: &_m.Mock}
 }
 
-// Events provides a mock function for the type MockRepository
-func (_mock *MockRepository) Events(context1 context.Context) ([]entity.Event, error) {
-	ret := _mock.Called(context1)
+// Create provides a mock function for the type MockRepository
+func (_mock *MockRepository) Create(context1 context.Context, event entity.Event) (entity.Event, error) {
+	ret := _mock.Called(context1, event)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Events")
+		panic("no return value specified for Create")
 	}
 
-	var r0 []entity.Event
+	var r0 entity.Event
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]entity.Event, error)); ok {
-		return returnFunc(context1)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Event) (entity.Event, error)); ok {
+		return returnFunc(context1, event)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []entity.Event); ok {
-		r0 = returnFunc(context1)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Event) entity.Event); ok {
+		r0 = returnFunc(context1, event)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]entity.Event)
-		}
+		r0 = ret.Get(0).(entity.Event)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(context1)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.Event) error); ok {
+		r1 = returnFunc(context1, event)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// MockRepository_Events_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Events'
-type MockRepository_Events_Call struct {
+// MockRepository_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockRepository_Create_Call struct {
 	*mock.Call
 }
 
-// Events is a helper method to define mock.On call
+// Create is a helper method to define mock.On call
 //   - context1 context.Context
-func (_e *MockRepository_Expecter) Events(context1 interface{}) *MockRepository_Events_Call {
-	return &MockRepository_Events_Call{Call: _e.mock.On("Events", context1)}
+//   - event entity.Event
+func (_e *MockRepository_Expecter) Create(context1 interface{}, event interface{}) *MockRepository_Create_Call {
+	return &MockRepository_Create_Call{Call: _e.mock.On("Create", context1, event)}
 }
 
-func (_c *MockRepository_Events_Call) Run(run func(context1 context.Context)) *MockRepository_Events_Call {
+func (_c *MockRepository_Create_Call) Run(run func(context1 context.Context, event entity.Event)) *MockRepository_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockRepository_Events_Call) Return(events []entity.Event, err error) *MockRepository_Events_Call {
-	_c.Call.Return(events, err)
-	return _c
-}
-
-func (_c *MockRepository_Events_Call) RunAndReturn(run func(context1 context.Context) ([]entity.Event, error)) *MockRepository_Events_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// Load provides a mock function for the type MockRepository
-func (_mock *MockRepository) Load(context1 context.Context, events []entity.Event) error {
-	ret := _mock.Called(context1, events)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Load")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, []entity.Event) error); ok {
-		r0 = returnFunc(context1, events)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// MockRepository_Load_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Load'
-type MockRepository_Load_Call struct {
-	*mock.Call
-}
-
-// Load is a helper method to define mock.On call
-//   - context1 context.Context
-//   - events []entity.Event
-func (_e *MockRepository_Expecter) Load(context1 interface{}, events interface{}) *MockRepository_Load_Call {
-	return &MockRepository_Load_Call{Call: _e.mock.On("Load", context1, events)}
-}
-
-func (_c *MockRepository_Load_Call) Run(run func(context1 context.Context, events []entity.Event)) *MockRepository_Load_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 []entity.Event
+		var arg1 entity.Event
 		if args[1] != nil {
-			arg1 = args[1].([]entity.Event)
+			arg1 = args[1].(entity.Event)
 		}
 		run(
 			arg0,
@@ -147,12 +94,80 @@ func (_c *MockRepository_Load_Call) Run(run func(context1 context.Context, event
 	return _c
 }
 
-func (_c *MockRepository_Load_Call) Return(err error) *MockRepository_Load_Call {
-	_c.Call.Return(err)
+func (_c *MockRepository_Create_Call) Return(event1 entity.Event, err error) *MockRepository_Create_Call {
+	_c.Call.Return(event1, err)
 	return _c
 }
 
-func (_c *MockRepository_Load_Call) RunAndReturn(run func(context1 context.Context, events []entity.Event) error) *MockRepository_Load_Call {
+func (_c *MockRepository_Create_Call) RunAndReturn(run func(context1 context.Context, event entity.Event) (entity.Event, error)) *MockRepository_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Read provides a mock function for the type MockRepository
+func (_mock *MockRepository) Read(context1 context.Context, eventFilter entity.EventFilter) ([]entity.Event, error) {
+	ret := _mock.Called(context1, eventFilter)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Read")
+	}
+
+	var r0 []entity.Event
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.EventFilter) ([]entity.Event, error)); ok {
+		return returnFunc(context1, eventFilter)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.EventFilter) []entity.Event); ok {
+		r0 = returnFunc(context1, eventFilter)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.Event)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.EventFilter) error); ok {
+		r1 = returnFunc(context1, eventFilter)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockRepository_Read_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Read'
+type MockRepository_Read_Call struct {
+	*mock.Call
+}
+
+// Read is a helper method to define mock.On call
+//   - context1 context.Context
+//   - eventFilter entity.EventFilter
+func (_e *MockRepository_Expecter) Read(context1 interface{}, eventFilter interface{}) *MockRepository_Read_Call {
+	return &MockRepository_Read_Call{Call: _e.mock.On("Read", context1, eventFilter)}
+}
+
+func (_c *MockRepository_Read_Call) Run(run func(context1 context.Context, eventFilter entity.EventFilter)) *MockRepository_Read_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 entity.EventFilter
+		if args[1] != nil {
+			arg1 = args[1].(entity.EventFilter)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRepository_Read_Call) Return(events []entity.Event, err error) *MockRepository_Read_Call {
+	_c.Call.Return(events, err)
+	return _c
+}
+
+func (_c *MockRepository_Read_Call) RunAndReturn(run func(context1 context.Context, eventFilter entity.EventFilter) ([]entity.Event, error)) *MockRepository_Read_Call {
 	_c.Call.Return(run)
 	return _c
 }

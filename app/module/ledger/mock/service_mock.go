@@ -8,7 +8,6 @@ import (
 	"context"
 
 	"github.com/ericmarcelinotju/mal-assessment/app/entity"
-	"github.com/ericmarcelinotju/mal-assessment/apperror"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -37,72 +36,6 @@ type MockService_Expecter struct {
 
 func (_m *MockService) EXPECT() *MockService_Expecter {
 	return &MockService_Expecter{mock: &_m.Mock}
-}
-
-// Append provides a mock function for the type MockService
-func (_mock *MockService) Append(context1 context.Context, ledgerEntry entity.LedgerEntry) (entity.LedgerEntry, error) {
-	ret := _mock.Called(context1, ledgerEntry)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Append")
-	}
-
-	var r0 entity.LedgerEntry
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.LedgerEntry) (entity.LedgerEntry, error)); ok {
-		return returnFunc(context1, ledgerEntry)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.LedgerEntry) entity.LedgerEntry); ok {
-		r0 = returnFunc(context1, ledgerEntry)
-	} else {
-		r0 = ret.Get(0).(entity.LedgerEntry)
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.LedgerEntry) error); ok {
-		r1 = returnFunc(context1, ledgerEntry)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockService_Append_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Append'
-type MockService_Append_Call struct {
-	*mock.Call
-}
-
-// Append is a helper method to define mock.On call
-//   - context1 context.Context
-//   - ledgerEntry entity.LedgerEntry
-func (_e *MockService_Expecter) Append(context1 interface{}, ledgerEntry interface{}) *MockService_Append_Call {
-	return &MockService_Append_Call{Call: _e.mock.On("Append", context1, ledgerEntry)}
-}
-
-func (_c *MockService_Append_Call) Run(run func(context1 context.Context, ledgerEntry entity.LedgerEntry)) *MockService_Append_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 entity.LedgerEntry
-		if args[1] != nil {
-			arg1 = args[1].(entity.LedgerEntry)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockService_Append_Call) Return(ledgerEntry1 entity.LedgerEntry, err error) *MockService_Append_Call {
-	_c.Call.Return(ledgerEntry1, err)
-	return _c
-}
-
-func (_c *MockService_Append_Call) RunAndReturn(run func(context1 context.Context, ledgerEntry entity.LedgerEntry) (entity.LedgerEntry, error)) *MockService_Append_Call {
-	_c.Call.Return(run)
-	return _c
 }
 
 // ClosingBalance provides a mock function for the type MockService
@@ -255,126 +188,68 @@ func (_c *MockService_ClosingBalanceExcluding_Call) RunAndReturn(run func(contex
 	return _c
 }
 
-// Entries provides a mock function for the type MockService
-func (_mock *MockService) Entries(context1 context.Context) ([]entity.LedgerEntry, error) {
-	ret := _mock.Called(context1)
+// Create provides a mock function for the type MockService
+func (_mock *MockService) Create(context1 context.Context, ledgerEntry entity.LedgerEntry) (entity.LedgerEntry, error) {
+	ret := _mock.Called(context1, ledgerEntry)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Entries")
+		panic("no return value specified for Create")
 	}
 
-	var r0 []entity.LedgerEntry
+	var r0 entity.LedgerEntry
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]entity.LedgerEntry, error)); ok {
-		return returnFunc(context1)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.LedgerEntry) (entity.LedgerEntry, error)); ok {
+		return returnFunc(context1, ledgerEntry)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []entity.LedgerEntry); ok {
-		r0 = returnFunc(context1)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.LedgerEntry) entity.LedgerEntry); ok {
+		r0 = returnFunc(context1, ledgerEntry)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]entity.LedgerEntry)
-		}
+		r0 = ret.Get(0).(entity.LedgerEntry)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(context1)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.LedgerEntry) error); ok {
+		r1 = returnFunc(context1, ledgerEntry)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// MockService_Entries_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Entries'
-type MockService_Entries_Call struct {
+// MockService_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockService_Create_Call struct {
 	*mock.Call
 }
 
-// Entries is a helper method to define mock.On call
+// Create is a helper method to define mock.On call
 //   - context1 context.Context
-func (_e *MockService_Expecter) Entries(context1 interface{}) *MockService_Entries_Call {
-	return &MockService_Entries_Call{Call: _e.mock.On("Entries", context1)}
+//   - ledgerEntry entity.LedgerEntry
+func (_e *MockService_Expecter) Create(context1 interface{}, ledgerEntry interface{}) *MockService_Create_Call {
+	return &MockService_Create_Call{Call: _e.mock.On("Create", context1, ledgerEntry)}
 }
 
-func (_c *MockService_Entries_Call) Run(run func(context1 context.Context)) *MockService_Entries_Call {
+func (_c *MockService_Create_Call) Run(run func(context1 context.Context, ledgerEntry entity.LedgerEntry)) *MockService_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
+		var arg1 entity.LedgerEntry
+		if args[1] != nil {
+			arg1 = args[1].(entity.LedgerEntry)
+		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
 }
 
-func (_c *MockService_Entries_Call) Return(ledgerEntrys []entity.LedgerEntry, err error) *MockService_Entries_Call {
-	_c.Call.Return(ledgerEntrys, err)
+func (_c *MockService_Create_Call) Return(ledgerEntry1 entity.LedgerEntry, err error) *MockService_Create_Call {
+	_c.Call.Return(ledgerEntry1, err)
 	return _c
 }
 
-func (_c *MockService_Entries_Call) RunAndReturn(run func(context1 context.Context) ([]entity.LedgerEntry, error)) *MockService_Entries_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// Errors provides a mock function for the type MockService
-func (_mock *MockService) Errors(context1 context.Context) ([]entity.LedgerError, error) {
-	ret := _mock.Called(context1)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Errors")
-	}
-
-	var r0 []entity.LedgerError
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]entity.LedgerError, error)); ok {
-		return returnFunc(context1)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []entity.LedgerError); ok {
-		r0 = returnFunc(context1)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]entity.LedgerError)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(context1)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockService_Errors_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Errors'
-type MockService_Errors_Call struct {
-	*mock.Call
-}
-
-// Errors is a helper method to define mock.On call
-//   - context1 context.Context
-func (_e *MockService_Expecter) Errors(context1 interface{}) *MockService_Errors_Call {
-	return &MockService_Errors_Call{Call: _e.mock.On("Errors", context1)}
-}
-
-func (_c *MockService_Errors_Call) Run(run func(context1 context.Context)) *MockService_Errors_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockService_Errors_Call) Return(ledgerErrors []entity.LedgerError, err error) *MockService_Errors_Call {
-	_c.Call.Return(ledgerErrors, err)
-	return _c
-}
-
-func (_c *MockService_Errors_Call) RunAndReturn(run func(context1 context.Context) ([]entity.LedgerError, error)) *MockService_Errors_Call {
+func (_c *MockService_Create_Call) RunAndReturn(run func(context1 context.Context, ledgerEntry entity.LedgerEntry) (entity.LedgerEntry, error)) *MockService_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -465,71 +340,70 @@ func (_c *MockService_Post_Call) RunAndReturn(run func(context1 context.Context,
 	return _c
 }
 
-// Reject provides a mock function for the type MockService
-func (_mock *MockService) Reject(context1 context.Context, event entity.Event, errorCode apperror.ErrorCode, s string) error {
-	ret := _mock.Called(context1, event, errorCode, s)
+// Read provides a mock function for the type MockService
+func (_mock *MockService) Read(context1 context.Context, ledgerEntryFilter entity.LedgerEntryFilter) ([]entity.LedgerEntry, error) {
+	ret := _mock.Called(context1, ledgerEntryFilter)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Reject")
+		panic("no return value specified for Read")
 	}
 
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Event, apperror.ErrorCode, string) error); ok {
-		r0 = returnFunc(context1, event, errorCode, s)
-	} else {
-		r0 = ret.Error(0)
+	var r0 []entity.LedgerEntry
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.LedgerEntryFilter) ([]entity.LedgerEntry, error)); ok {
+		return returnFunc(context1, ledgerEntryFilter)
 	}
-	return r0
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.LedgerEntryFilter) []entity.LedgerEntry); ok {
+		r0 = returnFunc(context1, ledgerEntryFilter)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.LedgerEntry)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.LedgerEntryFilter) error); ok {
+		r1 = returnFunc(context1, ledgerEntryFilter)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
 }
 
-// MockService_Reject_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Reject'
-type MockService_Reject_Call struct {
+// MockService_Read_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Read'
+type MockService_Read_Call struct {
 	*mock.Call
 }
 
-// Reject is a helper method to define mock.On call
+// Read is a helper method to define mock.On call
 //   - context1 context.Context
-//   - event entity.Event
-//   - errorCode apperror.ErrorCode
-//   - s string
-func (_e *MockService_Expecter) Reject(context1 interface{}, event interface{}, errorCode interface{}, s interface{}) *MockService_Reject_Call {
-	return &MockService_Reject_Call{Call: _e.mock.On("Reject", context1, event, errorCode, s)}
+//   - ledgerEntryFilter entity.LedgerEntryFilter
+func (_e *MockService_Expecter) Read(context1 interface{}, ledgerEntryFilter interface{}) *MockService_Read_Call {
+	return &MockService_Read_Call{Call: _e.mock.On("Read", context1, ledgerEntryFilter)}
 }
 
-func (_c *MockService_Reject_Call) Run(run func(context1 context.Context, event entity.Event, errorCode apperror.ErrorCode, s string)) *MockService_Reject_Call {
+func (_c *MockService_Read_Call) Run(run func(context1 context.Context, ledgerEntryFilter entity.LedgerEntryFilter)) *MockService_Read_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 entity.Event
+		var arg1 entity.LedgerEntryFilter
 		if args[1] != nil {
-			arg1 = args[1].(entity.Event)
-		}
-		var arg2 apperror.ErrorCode
-		if args[2] != nil {
-			arg2 = args[2].(apperror.ErrorCode)
-		}
-		var arg3 string
-		if args[3] != nil {
-			arg3 = args[3].(string)
+			arg1 = args[1].(entity.LedgerEntryFilter)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
-			arg3,
 		)
 	})
 	return _c
 }
 
-func (_c *MockService_Reject_Call) Return(err error) *MockService_Reject_Call {
-	_c.Call.Return(err)
+func (_c *MockService_Read_Call) Return(ledgerEntrys []entity.LedgerEntry, err error) *MockService_Read_Call {
+	_c.Call.Return(ledgerEntrys, err)
 	return _c
 }
 
-func (_c *MockService_Reject_Call) RunAndReturn(run func(context1 context.Context, event entity.Event, errorCode apperror.ErrorCode, s string) error) *MockService_Reject_Call {
+func (_c *MockService_Read_Call) RunAndReturn(run func(context1 context.Context, ledgerEntryFilter entity.LedgerEntryFilter) ([]entity.LedgerEntry, error)) *MockService_Read_Call {
 	_c.Call.Return(run)
 	return _c
 }

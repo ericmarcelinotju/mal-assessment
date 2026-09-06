@@ -8,9 +8,10 @@ import (
 
 // Repository stores the accounts the ledger operates on.
 type Repository interface {
-	Save(context.Context, entity.Account) error
-	Get(context.Context, string) (entity.Account, error)
-	All(context.Context) ([]entity.Account, error)
+	Create(context.Context, entity.Account) (entity.Account, error)
+	Read(context.Context, entity.AccountFilter) ([]entity.Account, error)
+	Update(context.Context, entity.Account) (entity.Account, error)
+	Delete(context.Context, string) error
 }
 
 // repository keeps the accounts in memory, preserving insertion order so the
@@ -24,26 +25,44 @@ func NewRepository() Repository {
 	return &repository{accounts: make(map[string]entity.Account)}
 }
 
-func (s *repository) Save(_ context.Context, acc entity.Account) error {
-	if _, exists := s.accounts[acc.ID]; !exists {
-		s.order = append(s.order, acc.ID)
+func (s *repository) Create(_ context.Context, acc entity.Account) (entity.Account, error) {
+	if _, exists := s.accounts[acc.ID]; exists {
+		return entity.Account{}, ErrAlreadyExists
 	}
 	s.accounts[acc.ID] = acc
-	return nil
-}
-
-func (s *repository) Get(_ context.Context, id string) (entity.Account, error) {
-	acc, ok := s.accounts[id]
-	if !ok {
-		return entity.Account{}, ErrNotFound
-	}
+	s.order = append(s.order, acc.ID)
 	return acc, nil
 }
 
-func (s *repository) All(_ context.Context) ([]entity.Account, error) {
+func (s *repository) Read(_ context.Context, filter entity.AccountFilter) ([]entity.Account, error) {
 	out := make([]entity.Account, 0, len(s.order))
 	for _, id := range s.order {
+		if filter.ID != "" && filter.ID != id {
+			continue
+		}
 		out = append(out, s.accounts[id])
 	}
 	return out, nil
+}
+
+func (s *repository) Update(_ context.Context, acc entity.Account) (entity.Account, error) {
+	if _, exists := s.accounts[acc.ID]; !exists {
+		return entity.Account{}, ErrNotFound
+	}
+	s.accounts[acc.ID] = acc
+	return acc, nil
+}
+
+func (s *repository) Delete(_ context.Context, id string) error {
+	if _, exists := s.accounts[id]; !exists {
+		return ErrNotFound
+	}
+	delete(s.accounts, id)
+	for i, existing := range s.order {
+		if existing == id {
+			s.order = append(s.order[:i], s.order[i+1:]...)
+			break
+		}
+	}
+	return nil
 }

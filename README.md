@@ -169,12 +169,35 @@ One folder per module, each owning a `service.go` and a `repository.go`.
 ```
 app/module/
   account/        accounts, their currency and opening balance
-  ledger/         the append-only journal: entries, value-dated balances, rejections
+  rejection/      the record of instructions that were refused
+  ledger/         the append-only journal and value-dated balances
   authorization/  holds, the availability test, settlement
   fee/            overdraft assessment and the policy-gated reversal sweep
   interest/       accrual, restatement, capitalisation
   replay/         orchestration: routes each event, runs the day close, builds the report
 ```
+
+Every repository and service exposes the same CRUD vocabulary -- `Create`,
+`Read`, `Update`, `Delete` -- with `Read` taking a filter, as in the
+boilerplate. Two of those verbs are deliberately absent in places:
+
+| module | Create | Read | Update | Delete |
+|---|---|---|---|---|
+| account | yes | yes | yes | yes |
+| authorization | yes | yes | yes | yes |
+| fee | yes | yes | -- | yes |
+| ledger | yes | yes | **no** | **no** |
+| interest | yes | yes | **no** | **no** |
+| rejection | yes | yes | **no** | **no** |
+| replay | yes | yes | **no** | **no** |
+
+The journal, the accrual subledger, the rejection log and the event stream are
+append-only. `Update` and `Delete` do not exist on them, and that absence is the
+design rather than an omission: a correction is a new record with the opposite
+sign, and the operation that would rewrite history is not there to be called.
+The two full-CRUD modules earn their verbs -- an authorization genuinely moves
+from APPROVED to SETTLED, and `fee.Delete` is how the criterion-6 policy makes a
+day chargeable again after its fee is reversed.
 
 Every module is exactly two files -- `service.go` and `repository.go` -- plus a
 generated `mock/` and, where there are tests, a `test/`. No topic files, no

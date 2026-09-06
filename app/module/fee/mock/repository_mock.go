@@ -38,172 +38,102 @@ func (_m *MockRepository) EXPECT() *MockRepository_Expecter {
 	return &MockRepository_Expecter{mock: &_m.Mock}
 }
 
-// Clear provides a mock function for the type MockRepository
-func (_mock *MockRepository) Clear(context1 context.Context, s string, day entity.Day) error {
-	ret := _mock.Called(context1, s, day)
+// Create provides a mock function for the type MockRepository
+func (_mock *MockRepository) Create(context1 context.Context, feeAssessment entity.FeeAssessment) (entity.FeeAssessment, error) {
+	ret := _mock.Called(context1, feeAssessment)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Clear")
+		panic("no return value specified for Create")
 	}
 
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, entity.Day) error); ok {
-		r0 = returnFunc(context1, s, day)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// MockRepository_Clear_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Clear'
-type MockRepository_Clear_Call struct {
-	*mock.Call
-}
-
-// Clear is a helper method to define mock.On call
-//   - context1 context.Context
-//   - s string
-//   - day entity.Day
-func (_e *MockRepository_Expecter) Clear(context1 interface{}, s interface{}, day interface{}) *MockRepository_Clear_Call {
-	return &MockRepository_Clear_Call{Call: _e.mock.On("Clear", context1, s, day)}
-}
-
-func (_c *MockRepository_Clear_Call) Run(run func(context1 context.Context, s string, day entity.Day)) *MockRepository_Clear_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 entity.Day
-		if args[2] != nil {
-			arg2 = args[2].(entity.Day)
-		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-		)
-	})
-	return _c
-}
-
-func (_c *MockRepository_Clear_Call) Return(err error) *MockRepository_Clear_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *MockRepository_Clear_Call) RunAndReturn(run func(context1 context.Context, s string, day entity.Day) error) *MockRepository_Clear_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// IsAssessed provides a mock function for the type MockRepository
-func (_mock *MockRepository) IsAssessed(context1 context.Context, s string, day entity.Day) (bool, error) {
-	ret := _mock.Called(context1, s, day)
-
-	if len(ret) == 0 {
-		panic("no return value specified for IsAssessed")
-	}
-
-	var r0 bool
+	var r0 entity.FeeAssessment
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, entity.Day) (bool, error)); ok {
-		return returnFunc(context1, s, day)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.FeeAssessment) (entity.FeeAssessment, error)); ok {
+		return returnFunc(context1, feeAssessment)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, entity.Day) bool); ok {
-		r0 = returnFunc(context1, s, day)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.FeeAssessment) entity.FeeAssessment); ok {
+		r0 = returnFunc(context1, feeAssessment)
 	} else {
-		r0 = ret.Get(0).(bool)
+		r0 = ret.Get(0).(entity.FeeAssessment)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, entity.Day) error); ok {
-		r1 = returnFunc(context1, s, day)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.FeeAssessment) error); ok {
+		r1 = returnFunc(context1, feeAssessment)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// MockRepository_IsAssessed_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsAssessed'
-type MockRepository_IsAssessed_Call struct {
+// MockRepository_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockRepository_Create_Call struct {
 	*mock.Call
 }
 
-// IsAssessed is a helper method to define mock.On call
+// Create is a helper method to define mock.On call
 //   - context1 context.Context
-//   - s string
-//   - day entity.Day
-func (_e *MockRepository_Expecter) IsAssessed(context1 interface{}, s interface{}, day interface{}) *MockRepository_IsAssessed_Call {
-	return &MockRepository_IsAssessed_Call{Call: _e.mock.On("IsAssessed", context1, s, day)}
+//   - feeAssessment entity.FeeAssessment
+func (_e *MockRepository_Expecter) Create(context1 interface{}, feeAssessment interface{}) *MockRepository_Create_Call {
+	return &MockRepository_Create_Call{Call: _e.mock.On("Create", context1, feeAssessment)}
 }
 
-func (_c *MockRepository_IsAssessed_Call) Run(run func(context1 context.Context, s string, day entity.Day)) *MockRepository_IsAssessed_Call {
+func (_c *MockRepository_Create_Call) Run(run func(context1 context.Context, feeAssessment entity.FeeAssessment)) *MockRepository_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 entity.FeeAssessment
 		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 entity.Day
-		if args[2] != nil {
-			arg2 = args[2].(entity.Day)
+			arg1 = args[1].(entity.FeeAssessment)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
 }
 
-func (_c *MockRepository_IsAssessed_Call) Return(b bool, err error) *MockRepository_IsAssessed_Call {
-	_c.Call.Return(b, err)
+func (_c *MockRepository_Create_Call) Return(feeAssessment1 entity.FeeAssessment, err error) *MockRepository_Create_Call {
+	_c.Call.Return(feeAssessment1, err)
 	return _c
 }
 
-func (_c *MockRepository_IsAssessed_Call) RunAndReturn(run func(context1 context.Context, s string, day entity.Day) (bool, error)) *MockRepository_IsAssessed_Call {
+func (_c *MockRepository_Create_Call) RunAndReturn(run func(context1 context.Context, feeAssessment entity.FeeAssessment) (entity.FeeAssessment, error)) *MockRepository_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// MarkAssessed provides a mock function for the type MockRepository
-func (_mock *MockRepository) MarkAssessed(context1 context.Context, s string, day entity.Day) error {
-	ret := _mock.Called(context1, s, day)
+// Delete provides a mock function for the type MockRepository
+func (_mock *MockRepository) Delete(context1 context.Context, s string) error {
+	ret := _mock.Called(context1, s)
 
 	if len(ret) == 0 {
-		panic("no return value specified for MarkAssessed")
+		panic("no return value specified for Delete")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, entity.Day) error); ok {
-		r0 = returnFunc(context1, s, day)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(context1, s)
 	} else {
 		r0 = ret.Error(0)
 	}
 	return r0
 }
 
-// MockRepository_MarkAssessed_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'MarkAssessed'
-type MockRepository_MarkAssessed_Call struct {
+// MockRepository_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type MockRepository_Delete_Call struct {
 	*mock.Call
 }
 
-// MarkAssessed is a helper method to define mock.On call
+// Delete is a helper method to define mock.On call
 //   - context1 context.Context
 //   - s string
-//   - day entity.Day
-func (_e *MockRepository_Expecter) MarkAssessed(context1 interface{}, s interface{}, day interface{}) *MockRepository_MarkAssessed_Call {
-	return &MockRepository_MarkAssessed_Call{Call: _e.mock.On("MarkAssessed", context1, s, day)}
+func (_e *MockRepository_Expecter) Delete(context1 interface{}, s interface{}) *MockRepository_Delete_Call {
+	return &MockRepository_Delete_Call{Call: _e.mock.On("Delete", context1, s)}
 }
 
-func (_c *MockRepository_MarkAssessed_Call) Run(run func(context1 context.Context, s string, day entity.Day)) *MockRepository_MarkAssessed_Call {
+func (_c *MockRepository_Delete_Call) Run(run func(context1 context.Context, s string)) *MockRepository_Delete_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -213,25 +143,88 @@ func (_c *MockRepository_MarkAssessed_Call) Run(run func(context1 context.Contex
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 entity.Day
-		if args[2] != nil {
-			arg2 = args[2].(entity.Day)
-		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
 }
 
-func (_c *MockRepository_MarkAssessed_Call) Return(err error) *MockRepository_MarkAssessed_Call {
+func (_c *MockRepository_Delete_Call) Return(err error) *MockRepository_Delete_Call {
 	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *MockRepository_MarkAssessed_Call) RunAndReturn(run func(context1 context.Context, s string, day entity.Day) error) *MockRepository_MarkAssessed_Call {
+func (_c *MockRepository_Delete_Call) RunAndReturn(run func(context1 context.Context, s string) error) *MockRepository_Delete_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Read provides a mock function for the type MockRepository
+func (_mock *MockRepository) Read(context1 context.Context, feeAssessmentFilter entity.FeeAssessmentFilter) ([]entity.FeeAssessment, error) {
+	ret := _mock.Called(context1, feeAssessmentFilter)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Read")
+	}
+
+	var r0 []entity.FeeAssessment
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.FeeAssessmentFilter) ([]entity.FeeAssessment, error)); ok {
+		return returnFunc(context1, feeAssessmentFilter)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.FeeAssessmentFilter) []entity.FeeAssessment); ok {
+		r0 = returnFunc(context1, feeAssessmentFilter)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.FeeAssessment)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.FeeAssessmentFilter) error); ok {
+		r1 = returnFunc(context1, feeAssessmentFilter)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockRepository_Read_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Read'
+type MockRepository_Read_Call struct {
+	*mock.Call
+}
+
+// Read is a helper method to define mock.On call
+//   - context1 context.Context
+//   - feeAssessmentFilter entity.FeeAssessmentFilter
+func (_e *MockRepository_Expecter) Read(context1 interface{}, feeAssessmentFilter interface{}) *MockRepository_Read_Call {
+	return &MockRepository_Read_Call{Call: _e.mock.On("Read", context1, feeAssessmentFilter)}
+}
+
+func (_c *MockRepository_Read_Call) Run(run func(context1 context.Context, feeAssessmentFilter entity.FeeAssessmentFilter)) *MockRepository_Read_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 entity.FeeAssessmentFilter
+		if args[1] != nil {
+			arg1 = args[1].(entity.FeeAssessmentFilter)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRepository_Read_Call) Return(feeAssessments []entity.FeeAssessment, err error) *MockRepository_Read_Call {
+	_c.Call.Return(feeAssessments, err)
+	return _c
+}
+
+func (_c *MockRepository_Read_Call) RunAndReturn(run func(context1 context.Context, feeAssessmentFilter entity.FeeAssessmentFilter) ([]entity.FeeAssessment, error)) *MockRepository_Read_Call {
 	_c.Call.Return(run)
 	return _c
 }

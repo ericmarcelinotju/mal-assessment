@@ -38,12 +38,12 @@ func (_m *MockRepository) EXPECT() *MockRepository_Expecter {
 	return &MockRepository_Expecter{mock: &_m.Mock}
 }
 
-// AppendEntry provides a mock function for the type MockRepository
-func (_mock *MockRepository) AppendEntry(context1 context.Context, ledgerEntry entity.LedgerEntry) (entity.LedgerEntry, error) {
+// Create provides a mock function for the type MockRepository
+func (_mock *MockRepository) Create(context1 context.Context, ledgerEntry entity.LedgerEntry) (entity.LedgerEntry, error) {
 	ret := _mock.Called(context1, ledgerEntry)
 
 	if len(ret) == 0 {
-		panic("no return value specified for AppendEntry")
+		panic("no return value specified for Create")
 	}
 
 	var r0 entity.LedgerEntry
@@ -64,19 +64,19 @@ func (_mock *MockRepository) AppendEntry(context1 context.Context, ledgerEntry e
 	return r0, r1
 }
 
-// MockRepository_AppendEntry_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AppendEntry'
-type MockRepository_AppendEntry_Call struct {
+// MockRepository_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockRepository_Create_Call struct {
 	*mock.Call
 }
 
-// AppendEntry is a helper method to define mock.On call
+// Create is a helper method to define mock.On call
 //   - context1 context.Context
 //   - ledgerEntry entity.LedgerEntry
-func (_e *MockRepository_Expecter) AppendEntry(context1 interface{}, ledgerEntry interface{}) *MockRepository_AppendEntry_Call {
-	return &MockRepository_AppendEntry_Call{Call: _e.mock.On("AppendEntry", context1, ledgerEntry)}
+func (_e *MockRepository_Expecter) Create(context1 interface{}, ledgerEntry interface{}) *MockRepository_Create_Call {
+	return &MockRepository_Create_Call{Call: _e.mock.On("Create", context1, ledgerEntry)}
 }
 
-func (_c *MockRepository_AppendEntry_Call) Run(run func(context1 context.Context, ledgerEntry entity.LedgerEntry)) *MockRepository_AppendEntry_Call {
+func (_c *MockRepository_Create_Call) Run(run func(context1 context.Context, ledgerEntry entity.LedgerEntry)) *MockRepository_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -94,54 +94,65 @@ func (_c *MockRepository_AppendEntry_Call) Run(run func(context1 context.Context
 	return _c
 }
 
-func (_c *MockRepository_AppendEntry_Call) Return(ledgerEntry1 entity.LedgerEntry, err error) *MockRepository_AppendEntry_Call {
+func (_c *MockRepository_Create_Call) Return(ledgerEntry1 entity.LedgerEntry, err error) *MockRepository_Create_Call {
 	_c.Call.Return(ledgerEntry1, err)
 	return _c
 }
 
-func (_c *MockRepository_AppendEntry_Call) RunAndReturn(run func(context1 context.Context, ledgerEntry entity.LedgerEntry) (entity.LedgerEntry, error)) *MockRepository_AppendEntry_Call {
+func (_c *MockRepository_Create_Call) RunAndReturn(run func(context1 context.Context, ledgerEntry entity.LedgerEntry) (entity.LedgerEntry, error)) *MockRepository_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// AppendError provides a mock function for the type MockRepository
-func (_mock *MockRepository) AppendError(context1 context.Context, ledgerError entity.LedgerError) error {
-	ret := _mock.Called(context1, ledgerError)
+// Read provides a mock function for the type MockRepository
+func (_mock *MockRepository) Read(context1 context.Context, ledgerEntryFilter entity.LedgerEntryFilter) ([]entity.LedgerEntry, error) {
+	ret := _mock.Called(context1, ledgerEntryFilter)
 
 	if len(ret) == 0 {
-		panic("no return value specified for AppendError")
+		panic("no return value specified for Read")
 	}
 
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.LedgerError) error); ok {
-		r0 = returnFunc(context1, ledgerError)
-	} else {
-		r0 = ret.Error(0)
+	var r0 []entity.LedgerEntry
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.LedgerEntryFilter) ([]entity.LedgerEntry, error)); ok {
+		return returnFunc(context1, ledgerEntryFilter)
 	}
-	return r0
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.LedgerEntryFilter) []entity.LedgerEntry); ok {
+		r0 = returnFunc(context1, ledgerEntryFilter)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.LedgerEntry)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.LedgerEntryFilter) error); ok {
+		r1 = returnFunc(context1, ledgerEntryFilter)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
 }
 
-// MockRepository_AppendError_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AppendError'
-type MockRepository_AppendError_Call struct {
+// MockRepository_Read_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Read'
+type MockRepository_Read_Call struct {
 	*mock.Call
 }
 
-// AppendError is a helper method to define mock.On call
+// Read is a helper method to define mock.On call
 //   - context1 context.Context
-//   - ledgerError entity.LedgerError
-func (_e *MockRepository_Expecter) AppendError(context1 interface{}, ledgerError interface{}) *MockRepository_AppendError_Call {
-	return &MockRepository_AppendError_Call{Call: _e.mock.On("AppendError", context1, ledgerError)}
+//   - ledgerEntryFilter entity.LedgerEntryFilter
+func (_e *MockRepository_Expecter) Read(context1 interface{}, ledgerEntryFilter interface{}) *MockRepository_Read_Call {
+	return &MockRepository_Read_Call{Call: _e.mock.On("Read", context1, ledgerEntryFilter)}
 }
 
-func (_c *MockRepository_AppendError_Call) Run(run func(context1 context.Context, ledgerError entity.LedgerError)) *MockRepository_AppendError_Call {
+func (_c *MockRepository_Read_Call) Run(run func(context1 context.Context, ledgerEntryFilter entity.LedgerEntryFilter)) *MockRepository_Read_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 entity.LedgerError
+		var arg1 entity.LedgerEntryFilter
 		if args[1] != nil {
-			arg1 = args[1].(entity.LedgerError)
+			arg1 = args[1].(entity.LedgerEntryFilter)
 		}
 		run(
 			arg0,
@@ -151,136 +162,12 @@ func (_c *MockRepository_AppendError_Call) Run(run func(context1 context.Context
 	return _c
 }
 
-func (_c *MockRepository_AppendError_Call) Return(err error) *MockRepository_AppendError_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *MockRepository_AppendError_Call) RunAndReturn(run func(context1 context.Context, ledgerError entity.LedgerError) error) *MockRepository_AppendError_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// Entries provides a mock function for the type MockRepository
-func (_mock *MockRepository) Entries(context1 context.Context) ([]entity.LedgerEntry, error) {
-	ret := _mock.Called(context1)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Entries")
-	}
-
-	var r0 []entity.LedgerEntry
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]entity.LedgerEntry, error)); ok {
-		return returnFunc(context1)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []entity.LedgerEntry); ok {
-		r0 = returnFunc(context1)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]entity.LedgerEntry)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(context1)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockRepository_Entries_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Entries'
-type MockRepository_Entries_Call struct {
-	*mock.Call
-}
-
-// Entries is a helper method to define mock.On call
-//   - context1 context.Context
-func (_e *MockRepository_Expecter) Entries(context1 interface{}) *MockRepository_Entries_Call {
-	return &MockRepository_Entries_Call{Call: _e.mock.On("Entries", context1)}
-}
-
-func (_c *MockRepository_Entries_Call) Run(run func(context1 context.Context)) *MockRepository_Entries_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockRepository_Entries_Call) Return(ledgerEntrys []entity.LedgerEntry, err error) *MockRepository_Entries_Call {
+func (_c *MockRepository_Read_Call) Return(ledgerEntrys []entity.LedgerEntry, err error) *MockRepository_Read_Call {
 	_c.Call.Return(ledgerEntrys, err)
 	return _c
 }
 
-func (_c *MockRepository_Entries_Call) RunAndReturn(run func(context1 context.Context) ([]entity.LedgerEntry, error)) *MockRepository_Entries_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// Errors provides a mock function for the type MockRepository
-func (_mock *MockRepository) Errors(context1 context.Context) ([]entity.LedgerError, error) {
-	ret := _mock.Called(context1)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Errors")
-	}
-
-	var r0 []entity.LedgerError
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]entity.LedgerError, error)); ok {
-		return returnFunc(context1)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []entity.LedgerError); ok {
-		r0 = returnFunc(context1)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]entity.LedgerError)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(context1)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockRepository_Errors_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Errors'
-type MockRepository_Errors_Call struct {
-	*mock.Call
-}
-
-// Errors is a helper method to define mock.On call
-//   - context1 context.Context
-func (_e *MockRepository_Expecter) Errors(context1 interface{}) *MockRepository_Errors_Call {
-	return &MockRepository_Errors_Call{Call: _e.mock.On("Errors", context1)}
-}
-
-func (_c *MockRepository_Errors_Call) Run(run func(context1 context.Context)) *MockRepository_Errors_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockRepository_Errors_Call) Return(ledgerErrors []entity.LedgerError, err error) *MockRepository_Errors_Call {
-	_c.Call.Return(ledgerErrors, err)
-	return _c
-}
-
-func (_c *MockRepository_Errors_Call) RunAndReturn(run func(context1 context.Context) ([]entity.LedgerError, error)) *MockRepository_Errors_Call {
+func (_c *MockRepository_Read_Call) RunAndReturn(run func(context1 context.Context, ledgerEntryFilter entity.LedgerEntryFilter) ([]entity.LedgerEntry, error)) *MockRepository_Read_Call {
 	_c.Call.Return(run)
 	return _c
 }

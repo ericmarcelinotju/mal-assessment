@@ -38,74 +38,12 @@ func (_m *MockRepository) EXPECT() *MockRepository_Expecter {
 	return &MockRepository_Expecter{mock: &_m.Mock}
 }
 
-// Accruals provides a mock function for the type MockRepository
-func (_mock *MockRepository) Accruals(context1 context.Context) ([]entity.Accrual, error) {
-	ret := _mock.Called(context1)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Accruals")
-	}
-
-	var r0 []entity.Accrual
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]entity.Accrual, error)); ok {
-		return returnFunc(context1)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []entity.Accrual); ok {
-		r0 = returnFunc(context1)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]entity.Accrual)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(context1)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockRepository_Accruals_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Accruals'
-type MockRepository_Accruals_Call struct {
-	*mock.Call
-}
-
-// Accruals is a helper method to define mock.On call
-//   - context1 context.Context
-func (_e *MockRepository_Expecter) Accruals(context1 interface{}) *MockRepository_Accruals_Call {
-	return &MockRepository_Accruals_Call{Call: _e.mock.On("Accruals", context1)}
-}
-
-func (_c *MockRepository_Accruals_Call) Run(run func(context1 context.Context)) *MockRepository_Accruals_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockRepository_Accruals_Call) Return(accruals []entity.Accrual, err error) *MockRepository_Accruals_Call {
-	_c.Call.Return(accruals, err)
-	return _c
-}
-
-func (_c *MockRepository_Accruals_Call) RunAndReturn(run func(context1 context.Context) ([]entity.Accrual, error)) *MockRepository_Accruals_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// AppendAccrual provides a mock function for the type MockRepository
-func (_mock *MockRepository) AppendAccrual(context1 context.Context, accrual entity.Accrual) (entity.Accrual, error) {
+// Create provides a mock function for the type MockRepository
+func (_mock *MockRepository) Create(context1 context.Context, accrual entity.Accrual) (entity.Accrual, error) {
 	ret := _mock.Called(context1, accrual)
 
 	if len(ret) == 0 {
-		panic("no return value specified for AppendAccrual")
+		panic("no return value specified for Create")
 	}
 
 	var r0 entity.Accrual
@@ -126,19 +64,19 @@ func (_mock *MockRepository) AppendAccrual(context1 context.Context, accrual ent
 	return r0, r1
 }
 
-// MockRepository_AppendAccrual_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AppendAccrual'
-type MockRepository_AppendAccrual_Call struct {
+// MockRepository_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockRepository_Create_Call struct {
 	*mock.Call
 }
 
-// AppendAccrual is a helper method to define mock.On call
+// Create is a helper method to define mock.On call
 //   - context1 context.Context
 //   - accrual entity.Accrual
-func (_e *MockRepository_Expecter) AppendAccrual(context1 interface{}, accrual interface{}) *MockRepository_AppendAccrual_Call {
-	return &MockRepository_AppendAccrual_Call{Call: _e.mock.On("AppendAccrual", context1, accrual)}
+func (_e *MockRepository_Expecter) Create(context1 interface{}, accrual interface{}) *MockRepository_Create_Call {
+	return &MockRepository_Create_Call{Call: _e.mock.On("Create", context1, accrual)}
 }
 
-func (_c *MockRepository_AppendAccrual_Call) Run(run func(context1 context.Context, accrual entity.Accrual)) *MockRepository_AppendAccrual_Call {
+func (_c *MockRepository_Create_Call) Run(run func(context1 context.Context, accrual entity.Accrual)) *MockRepository_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -156,12 +94,80 @@ func (_c *MockRepository_AppendAccrual_Call) Run(run func(context1 context.Conte
 	return _c
 }
 
-func (_c *MockRepository_AppendAccrual_Call) Return(accrual1 entity.Accrual, err error) *MockRepository_AppendAccrual_Call {
+func (_c *MockRepository_Create_Call) Return(accrual1 entity.Accrual, err error) *MockRepository_Create_Call {
 	_c.Call.Return(accrual1, err)
 	return _c
 }
 
-func (_c *MockRepository_AppendAccrual_Call) RunAndReturn(run func(context1 context.Context, accrual entity.Accrual) (entity.Accrual, error)) *MockRepository_AppendAccrual_Call {
+func (_c *MockRepository_Create_Call) RunAndReturn(run func(context1 context.Context, accrual entity.Accrual) (entity.Accrual, error)) *MockRepository_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Read provides a mock function for the type MockRepository
+func (_mock *MockRepository) Read(context1 context.Context, accrualFilter entity.AccrualFilter) ([]entity.Accrual, error) {
+	ret := _mock.Called(context1, accrualFilter)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Read")
+	}
+
+	var r0 []entity.Accrual
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.AccrualFilter) ([]entity.Accrual, error)); ok {
+		return returnFunc(context1, accrualFilter)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.AccrualFilter) []entity.Accrual); ok {
+		r0 = returnFunc(context1, accrualFilter)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.Accrual)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.AccrualFilter) error); ok {
+		r1 = returnFunc(context1, accrualFilter)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockRepository_Read_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Read'
+type MockRepository_Read_Call struct {
+	*mock.Call
+}
+
+// Read is a helper method to define mock.On call
+//   - context1 context.Context
+//   - accrualFilter entity.AccrualFilter
+func (_e *MockRepository_Expecter) Read(context1 interface{}, accrualFilter interface{}) *MockRepository_Read_Call {
+	return &MockRepository_Read_Call{Call: _e.mock.On("Read", context1, accrualFilter)}
+}
+
+func (_c *MockRepository_Read_Call) Run(run func(context1 context.Context, accrualFilter entity.AccrualFilter)) *MockRepository_Read_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 entity.AccrualFilter
+		if args[1] != nil {
+			arg1 = args[1].(entity.AccrualFilter)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRepository_Read_Call) Return(accruals []entity.Accrual, err error) *MockRepository_Read_Call {
+	_c.Call.Return(accruals, err)
+	return _c
+}
+
+func (_c *MockRepository_Read_Call) RunAndReturn(run func(context1 context.Context, accrualFilter entity.AccrualFilter) ([]entity.Accrual, error)) *MockRepository_Read_Call {
 	_c.Call.Return(run)
 	return _c
 }

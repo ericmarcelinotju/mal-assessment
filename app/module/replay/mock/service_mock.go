@@ -140,6 +140,72 @@ func (_c *MockService_Config_Call) RunAndReturn(run func() config.Config) *MockS
 	return _c
 }
 
+// Create provides a mock function for the type MockService
+func (_mock *MockService) Create(context1 context.Context, event entity.Event) (entity.Event, error) {
+	ret := _mock.Called(context1, event)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Create")
+	}
+
+	var r0 entity.Event
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Event) (entity.Event, error)); ok {
+		return returnFunc(context1, event)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Event) entity.Event); ok {
+		r0 = returnFunc(context1, event)
+	} else {
+		r0 = ret.Get(0).(entity.Event)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.Event) error); ok {
+		r1 = returnFunc(context1, event)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockService_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockService_Create_Call struct {
+	*mock.Call
+}
+
+// Create is a helper method to define mock.On call
+//   - context1 context.Context
+//   - event entity.Event
+func (_e *MockService_Expecter) Create(context1 interface{}, event interface{}) *MockService_Create_Call {
+	return &MockService_Create_Call{Call: _e.mock.On("Create", context1, event)}
+}
+
+func (_c *MockService_Create_Call) Run(run func(context1 context.Context, event entity.Event)) *MockService_Create_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 entity.Event
+		if args[1] != nil {
+			arg1 = args[1].(entity.Event)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockService_Create_Call) Return(event1 entity.Event, err error) *MockService_Create_Call {
+	_c.Call.Return(event1, err)
+	return _c
+}
+
+func (_c *MockService_Create_Call) RunAndReturn(run func(context1 context.Context, event entity.Event) (entity.Event, error)) *MockService_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Post provides a mock function for the type MockService
 func (_mock *MockService) Post(context1 context.Context, event entity.Event) ([]entity.LedgerEntry, error) {
 	ret := _mock.Called(context1, event)
@@ -204,6 +270,74 @@ func (_c *MockService_Post_Call) Return(ledgerEntrys []entity.LedgerEntry, err e
 }
 
 func (_c *MockService_Post_Call) RunAndReturn(run func(context1 context.Context, event entity.Event) ([]entity.LedgerEntry, error)) *MockService_Post_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Read provides a mock function for the type MockService
+func (_mock *MockService) Read(context1 context.Context, eventFilter entity.EventFilter) ([]entity.Event, error) {
+	ret := _mock.Called(context1, eventFilter)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Read")
+	}
+
+	var r0 []entity.Event
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.EventFilter) ([]entity.Event, error)); ok {
+		return returnFunc(context1, eventFilter)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.EventFilter) []entity.Event); ok {
+		r0 = returnFunc(context1, eventFilter)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.Event)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.EventFilter) error); ok {
+		r1 = returnFunc(context1, eventFilter)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockService_Read_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Read'
+type MockService_Read_Call struct {
+	*mock.Call
+}
+
+// Read is a helper method to define mock.On call
+//   - context1 context.Context
+//   - eventFilter entity.EventFilter
+func (_e *MockService_Expecter) Read(context1 interface{}, eventFilter interface{}) *MockService_Read_Call {
+	return &MockService_Read_Call{Call: _e.mock.On("Read", context1, eventFilter)}
+}
+
+func (_c *MockService_Read_Call) Run(run func(context1 context.Context, eventFilter entity.EventFilter)) *MockService_Read_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 entity.EventFilter
+		if args[1] != nil {
+			arg1 = args[1].(entity.EventFilter)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockService_Read_Call) Return(events []entity.Event, err error) *MockService_Read_Call {
+	_c.Call.Return(events, err)
+	return _c
+}
+
+func (_c *MockService_Read_Call) RunAndReturn(run func(context1 context.Context, eventFilter entity.EventFilter) ([]entity.Event, error)) *MockService_Read_Call {
 	_c.Call.Return(run)
 	return _c
 }
