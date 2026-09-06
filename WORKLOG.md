@@ -150,7 +150,7 @@ in `git log`, which is the check on them.
   unversioned directory holding no interview code, and deleting from it would
   have been irreversible.
 
-- **23:00** Moved the project into `Workspace/mal` itself, git history and remote
+- **22:56** Moved the project into `Workspace/mal` itself, git history and remote
   intact, and cleared the boilerplate out of it. I had built the ledger in a
   sibling directory and left `mal` — the actual working directory — holding
   nothing but the untouched boilerplate, so from the reviewer's seat the app
